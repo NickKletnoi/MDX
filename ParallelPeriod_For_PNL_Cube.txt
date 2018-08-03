@@ -1,0 +1,43 @@
+Case 
+When [DATE].[Fiscal Date Hierarchy].CurrentMember.Level is [[DATE].[Fiscal Date Hierarchy].[Fiscal Month] 
+Then 
+Case
+When [DATE].[Month of FY].MemberValue=Ancestor(StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Date Hierarchy].[Fiscal Month]).MemberValue
+Then Aggregate(PeriodsToDate([DATE].[Fiscal Date Hierarchy].[Fiscal Month],StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(vba!dateadd('m',-1,NOW()),'yyyy-MM-dd'))+"T00:00:00]")),[Measures].[Amt])
+When [DATE].[Month of FY].MemberValue<Ancestor(StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Date Hierarchy].[Fiscal Month]).MemberValue
+Then (ParallelPeriod([DATE].[Fiscal Date Hierarchy].CurrentMember.Level, 1, [DATE].[Fiscal Date Hierarchy]),[Measures].[Amt])
+Else Null
+End
+When [DATE].[Fiscal Date Hierarchy].CurrentMember.Level is [DATE].[Fiscal Date Hierarchy].[Fiscal Quarter] 
+Then
+Case 
+When [DATE].[Fiscal Quarter of FY].MemberValue=Ancestor(StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Date Hierarchy].[Fiscal Quarter]).MemberValue
+Then Aggregate(PeriodsToDate([DATE].[Fiscal Date Hierarchy].[Fiscal Quarter],StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(vba!dateadd('q',-1,NOW()),'yyyy-MM-dd'))+"T00:00:00]")),[Measures].[Amt])
+When [DATE].[Fiscal Quarter of FY].MemberValue<Ancestor(StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Date Hierarchy].[Fiscal Quarter]).MemberValue
+Then (ParallelPeriod([DATE].[Fiscal Date Hierarchy].CurrentMember.Level, 1, [DATE].[Fiscal Date Hierarchy]),[Measures].[Amt])
+Else Null
+End
+When [DATE].[Fiscal Date Hierarchy].CurrentMember.Level is [DATE].[Fiscal Date Hierarchy].[Fiscal Half]
+Then 
+Case 
+When [DATE].[Fiscal Half of FY].MemberValue=Ancestor(StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Date Hierarchy].[Fiscal Half]).MemberValue
+Then Aggregate(PeriodsToDate([DATE].[Fiscal Date Hierarchy].[Fiscal Half],StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(vba!dateadd('q',-2,NOW()),'yyyy-MM-dd'))+"T00:00:00]")),[Measures].[Amt])
+When [DATE].[Fiscal Half of FY].MemberValue<Ancestor(StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Date Hierarchy].[Fiscal Half]).MemberValue
+Then (ParallelPeriod([DATE].[Fiscal Date Hierarchy].CurrentMember.Level, 1, [DATE].[Fiscal Date Hierarchy]),[Measures].[Amt])
+Else Null
+End
+When [DATE].[Fiscal Date Hierarchy].CurrentMember.Level is [DATE].[Fiscal Date Hierarchy].[Fiscal Year]
+Then
+Case 
+When [DATE].[Fiscal Year].MemberValue=Ancestor(StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Date Hierarchy].[Fiscal Year]).MemberValue
+Then Aggregate(PeriodsToDate([DATE].[Fiscal Date Hierarchy].[Fiscal Year],StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(vba!dateadd('yyyy',-1,NOW()),'yyyy-MM-dd'))+"T00:00:00]")),[Measures].[Amt])
+When [DATE].[Fiscal Year].MemberValue<Ancestor(StrToMember("[DATE].[Fiscal Date Hierarchy].[Fiscal Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Date Hierarchy].[Fiscal Year]).MemberValue
+Then (ParallelPeriod([DATE].[Fiscal Date Hierarchy].CurrentMember.Level, 1, [DATE].[Fiscal Date Hierarchy]),[Measures].[Amt])
+Else Null
+End
+Else Null
+End
+
+
+
+

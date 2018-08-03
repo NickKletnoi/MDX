@@ -1,0 +1,175 @@
+
+------------------ Denied Member Set / Measure Dimension / Readlimited Role -------------------------------------------------
+
+Union(
+   IIF( ([Measures].[Maximum GPSTD], Filter( [User].[Login ID].Members, [User].[Login ID].CurrentMember.UniqueName="[User].[Login ID].&["+UserName+"]").Item(0))>0,
+   StrToSet("{}"),
+   StrToSet("{ [Measures].[DP@STD] }"))
+,
+   IIF( ([Measures].[Maximum GPSTLF], Filter( [User].[Login ID].Members, [User].[Login ID].CurrentMember.UniqueName="[User].[Login ID].&["+UserName+"]").Item(0))>0,
+   StrToSet("{}"),
+   StrToSet("{[Measures].[DP@STLF]}"))
+,
+   StrToSet("{ [Measures].[Actual Cost], [Measures].[Standard Cost], [Measures].[Drop Ship Freight], [Measures].[Freight Charge Customer], [Measures].[Pickup Allowance], [Measures].[Sales Freight Accrued] }")
+,
+   StrToSet("{ [Measures].[Cash Discount], [Measures].[Total Discount], [Measures].[Rebate Amount], [Measures].[Restocking Fee], [Measures].[Unit Price Adjusted], [Measures].[Total Additional Charges] }")
+,
+   StrToSet("{ [Measures].[Allowance Advertising], [Measures].[Allowance Conversion], [Measures].[Allowance Other], [Measures].[Allowance Policy], [Measures].[Allowance Show], [Measures].[Total Allowances] }")
+,
+   StrToSet("{ [Measures].[Fileback Incentive Accrued], [Measures].[Fileback Incentive Manual], [Measures].[Total Fileback Incentives], [Measures].[Total Gross to Net] }")
+,
+   StrToSet("{ [Measures].[Incentive Advertising Accrued], [Measures].[Incentive Advertising Manual], [Measures].[Incentive EOM Accrued], [Measures].[Incentive EOM Manual], [Measures].[Incentive EOQ Accrued], [Measures].[Incentive EOQ Manual] }")
+, 
+   StrToSet("{ [Measures].[Incentive EOY Accrued], [Measures].[Incentive EOY Manual], [Measures].[Incentive Program Accrued], [Measures].[Incentive Program Manual], [Measures].[Incentive Rebate Accrued], [Measures].[Incentive Rebate Manual] }")
+,
+   StrToSet("{ [Measures].[Total Incentives Accrued], [Measures].[Total Incentives Manual], [Measures].[Total Incentives], [Measures].[Units At Product Mix UOM] }")
+
+
+------------------------------------------------------------------------------------------------------------------------------
+
+------------------  Allowed Member Set / Sales Territory Ship to / Sales Territory SK / ReadLimited Role
+
+Extract(
+              Filter(
+                        [Sales Territory Ship To].[Sales Territory SK].Children * 
+                        Exists( [User].[Login ID].Children, StrToMember("[User].[Login ID].&["+UserName+"]" ) )
+                        ,
+                        [Measures].[FactSecurityRowCount]>0
+                      )
+              ,
+              [Sales Territory Ship To].[Sales Territory SK]
+            )
+
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+---------------- Allowed Member Set / Customer Ship to / Customer SK / ReadLimitedCustomer Role
+
+--TEST COMMENT
+--EXTRACT(set...,dimiension1, dimension2...n)
+--Filter(Set_Expression, Logical_Expression )
+/*
+Extract(
+
+    Filter(
+    Crossjoin([Customer Ship To].[By Customer].[Corporate Customer Group].[The Home Depot Inc +HOMEDEPOT],
+    [Customer Ship To].[Customer SK].Children ) * 
+                        Filter( 
+                                  [User].[Login ID].Members, [User].[Login ID].CurrentMember.UniqueName = "[User].[Login ID].&["+UserName+"]"
+                                )
+                        ,
+                        [Measures].[SecurityCustomerRCnt]>0
+                      )
+              ,
+
+     [Customer Ship To].[Customer SK]
+
+            )
+
+*/
+Extract(
+
+
+             Filter(
+
+                       [Customer Ship To].[Customer SK].Children *
+                       Exists( [User].[Login ID].Children, StrToMember("[User].[Login ID].&["+UserName+"]")
+ )
+,
+
+                       [Measures].[SecurityCustomerRCnt]>0
+
+                      ),
+
+            
+ [Customer Ship To].[Customer SK])
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+----------------------------Denied Member Set / Measure Dimension / CustomerReadlimited Role ------------------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+Union(
+   IIF( ([Measures].[CustomerSecurity AVG PRICE], Filter( [User].[Login id].Members, [User].[Login id].CurrentMember.UniqueName="[User].[Login ID].&["+UserName+"]").Item(0))>0,
+   StrToSet("{}"),
+   StrToSet("{[Measures].[Avg Price]}"))
+,
+   IIF( ([Measures].[CustomerSecurity GPSTD], Filter( [User].[Login id].Members, [User].[Login id].CurrentMember.UniqueName="[User].[Login ID].&["+UserName+"]").Item(0))>0,
+   StrToSet("{}"),
+   StrToSet("{ [Measures].[DP@STD], [Measures].[MTD DP@STD], [Measures].[YTD DP@STD] }"))
+,
+   IIF( ([Measures].[CustomerSecurity GPSTLF], Filter( [User].[Login id].Members, [User].[Login id].CurrentMember.UniqueName="[User].[Login ID].&["+UserName+"]").Item(0))>0,
+   StrToSet("{}"),
+   StrToSet("{[Measures].[DP@STLF]}"))
+,
+   StrToSet("{ [Measures].[Actual Cost], [Measures].[Standard Cost], [Measures].[Drop Ship Freight], [Measures].[Freight Charge Customer], [Measures].[Pickup Allowance], [Measures].[Sales Freight Accrued] }")
+,
+   StrToSet("{ [Measures].[Cash Discount], [Measures].[Total Discount], [Measures].[Rebate Amount], [Measures].[Restocking Fee], [Measures].[Unit Price Adjusted] }")
+,
+   StrToSet("{ [Measures].[Allowance Advertising], [Measures].[Allowance Conversion], [Measures].[Allowance Other], [Measures].[Allowance Policy], [Measures].[Allowance Show] }")
+,
+   StrToSet("{ [Measures].[Fileback Incentive Accrued], [Measures].[Fileback Incentive Manual] }")
+,
+   StrToSet("{ [Measures].[Incentive Advertising Accrued], [Measures].[Incentive Advertising Manual], [Measures].[Incentive EOM Accrued], [Measures].[Incentive EOM Manual], [Measures].[Incentive EOQ Accrued], [Measures].[Incentive EOQ Manual] }")
+, 
+   StrToSet("{ [Measures].[Incentive EOY Accrued], [Measures].[Incentive EOY Manual], [Measures].[Incentive Program Accrued], [Measures].[Incentive Program Manual], [Measures].[Incentive Rebate Accrued], [Measures].[Incentive Rebate Manual] }")
+,
+  StrToSet("{[Measures].[Units At Product Mix UOM] }")
+)
+---------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

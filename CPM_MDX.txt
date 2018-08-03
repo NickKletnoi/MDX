@@ -1,0 +1,1720 @@
+/*
+The CALCULATE command controls the aggregation of leaf cells in the cube.
+If the CALCULATE command is deleted or modified, the data within the cube is affected.
+You should edit this command only if you manually specify how the cube is aggregated.
+*/
+CALCULATE;                      
+
+/*---mY--------------------------------------------*/
+([Measures].[Net Revenue NI] --[Client].[Master Number].members 
+--LEAVES([Activity])
+--LEAVES([Client])
+--LEAVES([Client Targeting Thresholds])
+
+--),
+--LEAVES([Client].[Master Number])
+--LEAVES([Client Targeting Thresholds]),
+--LEAVES([Home Product]), 
+--LEAVES([Product]),
+--LEAVES([Sale Type]), 
+--LEAVES([Time Period])
+
+)  = 
+[Measures].[Gross Rev NI]+
+[Measures].[Soft Dollar Adj NI]+
+[Measures].[Fac Loss NI]
+; 
+--SCOPE([Client].[Master Number].members);           
+--CACHE([Measures].[Net Revenue NI]);
+--END SCOPE;
+       
+([Measures].[Net Revenue Sec]) = 
+[Measures].[Gross Rev Sec]+
+[Measures].[Soft Dollar Adj Sec]+
+[Measures].[Fac Loss Sec];                     
+       
+([Measures].[Total Fac Loss]) =
+[Measures].[Fac Loss NI]+
+[Measures].[Fac Loss Sec];                
+      
+([Measures].[Total Gross Rev]) =
+[Measures].[Gross Rev NI]+
+[Measures].[Gross Rev Sec];               
+       
+([Measures].[Total Soft Dollar Adj])=
+[Measures].[Soft Dollar Adj NI]+
+[Measures].[Soft Dollar Adj Sec];              
+        
+(
+[Measures].[Total Net Revenue]
+
+--LEAVES([Activity]),
+--LEAVES([Client])
+--LEAVES([Client Targeting Thresholds]),
+--LEAVES([Home Product]), 
+--LEAVES([Product]),
+--LEAVES([Sale Type]), 
+--LEAVES([Time Period])
+) =
+[Measures].[Net Revenue NI]+
+[Measures].[Net Revenue Sec];               
+      
+
+
+
+([Measures].[Net Revenue NI Init])=
+[Measures].[Gross Rev NI Init]+
+[Measures].[Soft Dollar Adj NI Init]+
+[Measures].[Fac Loss NI Init];               
+     
+([Measures].[Net Revenue Sec Init])=
+[Measures].[Gross Rev Sec Init]+
+[Measures].[Soft Dollar Adj Sec Init]+
+[Measures].[Fac Loss Sec Init];               
+      
+([Measures].[Total Fac Loss Init])=
+[Measures].[Fac Loss NI Init]+
+[Measures].[Fac Loss Sec Init];               
+      
+([Measures].[Total Gross Rev Init])=
+[Measures].[Gross Rev NI Init]+
+[Measures].[Gross Rev Sec Init];               
+      
+([Measures].[Total Soft Dollar Adj Init])=
+[Measures].[Soft Dollar Adj NI Init]+
+[Measures].[Soft Dollar Adj Sec Init];                
+     
+([Measures].[Total Net Revenue Init])=
+[Measures].[Net Revenue NI Init]+
+[Measures].[Net Revenue Sec Init];               
+      
+([Measures].[Total ETF Qty Curr]) =
+[Measures].[ETF Qty NI Curr]+
+[Measures].[ETF Qty Sec Curr];              
+       
+([Measures].[Total Exec Qty Curr])=
+[Measures].[Exec Qty NI Curr]+
+[Measures].[Exec Qty Sec Curr];               
+ --6/15/06--mY---
+ --Deleting [Measures].[Total Listed Opt Qty Curr]     
+         
+([Measures].[Total Non-Exec Qty Curr])=
+[Measures].[Non-Exec Qty NI Curr]+
+[Measures].[Non-Exec Qty Sec Curr];               
+      
+([Measures].[Total Notl Risk Vol USD Curr])=
+[Measures].[Notl Risk Vol USD NI Curr]+
+[Measures].[Notl Risk Vol USD Sec Curr];               
+      
+([Measures].[Total Notl Vol USD Curr])=
+[Measures].[Notl Vol USD NI Curr]+
+[Measures].[Notl Vol USD Sec Curr];               
+      
+([Measures].[Total Qty Curr])=
+[Measures].[Qty NI Curr]+
+[Measures].[Qty Sec Curr];               
+      
+([Measures].[Total Risk Qty Curr])=
+[Measures].[Risk Qty NI Curr]+
+[Measures].[Risk Qty Sec Curr];               
+      
+([Measures].[Total Trade Count Curr] )=
+[Measures].[Trade Count NI Curr]+
+[Measures].[Trade Count Sec Curr];                
+     
+([Measures].[Total ETF Qty]) =
+[Measures].[ETF Qty NI]+
+[Measures].[ETF Qty Sec];               
+      
+([Measures].[Total Exec Qty])=
+[Measures].[Exec Qty NI]+
+[Measures].[Exec Qty Sec];               
+ 
+ --6/15/06--mY---
+ --Deleted [Measures].[Total Listed Opt Qty]          
+                   
+([Measures].[Total Non-Exec Qty])=
+[Measures].[Non-Exec Qty NI]+
+[Measures].[Non-Exec Qty Sec];               
+      
+([Measures].[Total Notl Risk Vol USD] )=
+[Measures].[Notl Risk Vol USD NI]+
+[Measures].[Notl Risk Vol USD Sec];               
+      
+([Measures].[Total Notl Vol USD]) =
+[Measures].[Notl Vol USD NI]+
+[Measures].[Notl Vol USD Sec];               
+      
+([Measures].[Total Qty])=
+[Measures].[Qty NI]+
+[Measures].[Qty Sec];                
+     
+([Measures].[Total Risk Qty]) =
+[Measures].[Risk Qty NI]+
+[Measures].[Risk Qty Sec];               
+      
+([Measures].[Total Trade Count]) =
+[Measures].[Trade Count NI]+
+[Measures].[Trade Count Sec];                   
+
+([Measures].[Total Event Count]) =
+[Measures].[Anl Conf Events]+
+[Measures].[Anl Group Events]+
+[Measures].[Anl Indiv Events]+
+[Measures].[Corp Conf Events]+
+[Measures].[Corp Group Events]+
+[Measures].[Corp Indiv Events];              
+
+([Measures].[Total Sales Expense]) =
+[Measures].[Portfolio Sales]+
+[Measures].[Sector Sales]+
+[Measures].[Client Orig and Mkt]+
+[Measures].[IMD Payout]
+
+;                
+
+
+/*---mY--------------------------------------------*/
+
+/* _______________________________________________*/
+/*_____________VN___________________________________*/
+
+[Measures].[Facilitation Loss Ratio]=
+iif( [Measures].[Total Gross Rev]+[Measures].[Total Soft Dollar Adj]=0,0,
+-[Measures].[Total Fac Loss]/([Measures].[Total Gross Rev]+[Measures].[Total Soft Dollar Adj]));                     
+FORMAT_STRING([Measures].[Facilitation Loss Ratio])="Percent";
+-- Research Cost Ratio changed to Research as Pct Gross Rev
+[Measures].[Research Cost Ratio]=iif(isempty([Measures].[Total Gross Rev])
+or [Measures].[Total Gross Rev]=0,0,[Measures].[Equity Research]/[Measures].[Total Gross Rev]);                     
+
+
+
+[Measures].[Sales Cost Ratio]=
+iif(isempty([Measures].[Total Gross Rev])or [Measures].[Total Gross Rev]=0,0,
+[Measures].[Total Sales Expense]/[Measures].[Total Gross Rev]);                     
+
+[Measures].[Sales-Trade Cost Ratio]=
+iif(isempty([Measures].[Total Gross Rev])or [Measures].[Total Gross Rev]=0,0,
+[Measures].[Sales-Trading]/[Measures].[Total Gross Rev]);
+
+[Measures].[Trade Cost Ratio]=
+iif(isempty([Measures].[Total Gross Rev])or [Measures].[Total Gross Rev]=0,0,
+[Measures].[Trading]/[Measures].[Total Gross Rev]);                    
+                    
+
+[Measures].[Variable NPE Ratio]=iif(isempty([Measures].[Total Gross Rev])
+or [Measures].[Total Gross Rev]=0,0,
+[Measures].[Variable NPE]/[Measures].[Total Gross Rev]);                    
+
+[Measures].[Facilitation Loss Ratio Bucket]=iif([Measures].[Facilitation Loss Ratio]>=
+Val([Client Targeting Thresholds].[Category].&[Lower Capital].Properties( "Value" )),"above","below");                    
+
+[Measures].[Research Cost Ratio Bucket]= iif([Measures].[Research Cost Ratio]>=
+Val([Client Targeting Thresholds].[Category].&[Lower Research].Properties( "Value" )),"above","below");                    
+
+[Measures].[Sales Cost Ratio Bucket]=iif([Measures].[Sales Cost Ratio]>=
+Val([Client Targeting Thresholds].[Category].&[Lower Sales].Properties( "Value" )),"above","below");                    
+
+[Measures].[Sales-Trade Cost Ratio Bucket]=iif([Measures].[Sales-Trade Cost Ratio]>=
+Val([Client Targeting Thresholds].[Category].&[Lower Sales-Trading].Properties( "Value" )),"above","below");                    
+
+[Measures].[Trade Cost Ratio Bucket]= iif([Measures].[Trade Cost Ratio]>=
+Val([Client Targeting Thresholds].[Category].&[Lower Trading].Properties( "Value" )),"above","below");                    
+
+[Measures].[Variable NPE Ratio Bucket]=iif([Measures].[Variable NPE Ratio]>=
+Val([Client Targeting Thresholds].[Category].&[Lower Variable NPE].Properties( "Value" )),"above","below");                   
+
+[Measures].[Global Clients Above THD]=iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Capital",
+     COUNT( FILTER([Client].[G Number].MEMBERS,[Measures].[Facilitation Loss Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales",
+     COUNT( FILTER([Client].[G Number].MEMBERS,[Measures].[Sales Cost Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales-Trading",
+     COUNT( FILTER([Client].[G Number].MEMBERS,[Measures].[Sales-Trade Cost Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Trading",
+    COUNT( FILTER([Client].[G Number].MEMBERS,[Measures].[Trade Cost Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Variable NPE",
+    COUNT( FILTER([Client].[G Number].MEMBERS,[Measures].[Variable NPE Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Research",
+    COUNT( FILTER([Client].[G Number].MEMBERS,[Measures].[Research Cost Ratio Bucket]="above")),
+"N/A"
+)
+)
+)
+)
+)
+);                  
+
+[Measures].[Global G Clients Above THD]=iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Capital",
+     COUNT( FILTER( [Client].[Global G Number].MEMBERS,[Measures].[Facilitation Loss Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales",
+     COUNT( FILTER([Client].[Global G Number].MEMBERS,[Measures].[Sales Cost Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales-Trading",
+     COUNT( FILTER([Client].[Global G Number].MEMBERS,[Measures].[Sales-Trade Cost Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Trading",
+    COUNT( FILTER([Client].[Global G Number].MEMBERS,[Measures].[Trade Cost Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Variable NPE",
+    COUNT( FILTER([Client].[Global G Number].MEMBERS,[Measures].[Variable NPE Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Research",
+    COUNT( FILTER( [Client].[Global G Number].MEMBERS,[Measures].[Research Cost Ratio Bucket]="above")),
+"n/a"
+)
+)
+)
+)
+)
+);                   
+
+[Measures].[Super Clients Above THD]=iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Capital",
+     COUNT( FILTER([Client].[Super Number].MEMBERS,[Measures].[Facilitation Loss Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales",
+     COUNT( FILTER([Client].[Super Number].MEMBERS,[Measures].[Sales Cost Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales-Trading",
+     COUNT( FILTER([Client].[Super Number].MEMBERS,[Measures].[Sales-Trade Cost Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Trading",
+    COUNT( FILTER([Client].[Super Number].MEMBERS,[Measures].[Trade Cost Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Variable NPE",
+    COUNT( FILTER([Client].[Super Number].MEMBERS,[Measures].[Variable NPE Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Research",
+    COUNT( FILTER([Client].[Super Number].MEMBERS,[Measures].[Research Cost Ratio Bucket]="above")),
+"N/A"
+)
+)
+)
+)
+)
+);                   
+
+[Measures].[Master Clients Above THD]=iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Capital",
+     COUNT( FILTER([Client].[Master Number].MEMBERS,[Measures].[Facilitation Loss Ratio Bucket]="above")),
+       iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales",
+            COUNT( FILTER([Client].[Master Number].MEMBERS,[Measures].[Sales Cost Ratio Bucket]="above")),
+            iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales-Trading",
+               COUNT( FILTER([Client].[Master Number].MEMBERS,[Measures].[Sales-Trade Cost Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Trading",
+    COUNT( FILTER([Client].[Master Number].MEMBERS,[Measures].[Trade Cost Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Variable NPE",
+    COUNT( FILTER([Client].[Master Number].MEMBERS,[Measures].[Variable NPE Ratio Bucket]="above")),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Research",
+    COUNT( FILTER([Client].[Master Number].MEMBERS,[Measures].[Research Cost Ratio Bucket]="above")),
+"N/A"
+                    )
+                )
+            )
+        )
+    )
+);                   
+
+[Measures].[Global Clients Avg Ratio]=iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Capital",
+     AVG({[Client].[G Number].MEMBERS},[Measures].[Facilitation Loss Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales",
+     AVG({[Client].[G Number].MEMBERS},[Measures].[Sales Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales-Trading",
+     AVG({[Client].[G Number].MEMBERS},[Measures].[Sales-Trade Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Trading",
+    AVG({[Client].[G Number].MEMBERS},[Measures].[Trade Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Variable NPE",
+    AVG({[Client].[G Number].MEMBERS},[Measures].[Variable NPE Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Research",
+    AVG({[Client].[G Number].MEMBERS},[Measures].[Research Cost Ratio]),
+"N/A"
+)
+)
+)
+)
+)
+);                   
+
+[Measures].[Global G Clients Avg Ratio]=iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Capital",
+     AVG({[Client].[Global G Number].MEMBERS},[Measures].[Facilitation Loss Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales",
+     AVG({[Client].[Global G Number].MEMBERS},[Measures].[Sales Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales-Trading",
+     AVG({[Client].[Global G Number].MEMBERS},[Measures].[Sales-Trade Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Trading",
+    AVG({[Client].[Global G Number].MEMBERS},[Measures].[Trade Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Variable NPE",
+    AVG({[Client].[Global G Number].MEMBERS},[Measures].[Variable NPE Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Research",
+    AVG({[Client].[Global G Number].MEMBERS},[Measures].[Research Cost Ratio]),
+"N/A"
+)
+)
+)
+)
+)
+);                   
+
+[Measures].[Super Clients Avg Ratio]=iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Capital",
+     AVG({[Client].[Super Number].MEMBERS},[Measures].[Facilitation Loss Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales",
+     AVG({[Client].[Super Number].MEMBERS},[Measures].[Sales Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales-Trading",
+     AVG({[Client].[Super Number].MEMBERS},[Measures].[Sales-Trade Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Trading",
+    AVG({[Client].[Super Number].MEMBERS},[Measures].[Trade Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Variable NPE",
+    AVG({[Client].[Super Number].MEMBERS},[Measures].[Variable NPE Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Research",
+    AVG({ [Client].[Super Number].MEMBERS},[Measures].[Research Cost Ratio]),
+"N/A"
+)
+)
+)
+)
+)
+);                   
+
+[Measures].[Master Clients Avg Ratio]=iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Capital",
+     AVG({[Client].[Master Number].MEMBERS},[Measures].[Facilitation Loss Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales",
+     AVG({[Client].[Master Number].MEMBERS},[Measures].[Sales Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Sales-Trading",
+     AVG({[Client].[Master Number].MEMBERS},[Measures].[Sales-Trade Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Trading",
+    AVG({[Client].[Master Number].MEMBERS},[Measures].[Trade Cost Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Variable NPE",
+    AVG({[Client].[Master Number].MEMBERS},[Measures].[Variable NPE Ratio]),
+iif([Client Targeting Thresholds].[Category].CURRENTMEMBER.Properties( "PRNT_PROP" )="Lower Research",
+    AVG({[Client].[Master Number].MEMBERS},[Measures].[Research Cost Ratio]) ,
+"N/A"
+)
+)
+)
+)
+)
+);                  
+
+[Measures].[Avg BPS]=([Measures].[Gross Rev Sec]/[Measures].[Notl Vol USD Sec Curr])*100;                  
+
+[Measures].[Risk Percent]=[Measures].[Total Notl Risk Vol USD]/[Measures].[Total Notl Vol USD];
+--[Measures].[Notl Risk Vol USD Sec Curr]/[Measures].[Notl Vol USD Sec Curr];                  
+
+
+ [Measures].[Agency Percent]=1-[Measures].[Risk Percent];                 
+
+ 
+
+([Measures].[Total Expenses]) = 
+[Measures].[TNE Expense]
++[Measures].[Total Sales Expense]
++[Measures].[Acct Mgt]
++[Measures].[Admin]
++[Measures].[Business Advisory]
++[Measures].[Cap Intro]
++[Measures].[Client Svc]
++[Measures].[Connectivity]
++[Measures].[Convertibles Research]
++[Measures].[Derivative Research]
++[Measures].[ECM Syndicate]
++[Measures].[Equity Research]
++[Measures].[Quants]+[Measures].[Sales-Trading]
++[Measures].[Soft Dollar Sales]
++[Measures].[Trading]+[Measures].[Tri-Party Fees]
++[Measures].[Variable NPE];                  
+-----My-6/8/06-----Added Leaves function for optimization
+--([Measures].[Contribution],LEAVES([Activity]),LEAVES([Client]),LEAVES([Client Targeting Thresholds]),LEAVES([Home Product]), LEAVES([Product]),LEAVES([Sale Type]), LEAVES([Time Period]) )
+([Measures].[Contribution])
+=[Measures].[Total Net Revenue]- [Measures].[Total Expenses];                 
+
+[Measures].[Contribution Pct Gross Rev]= Format( [Measures].[Contribution]/[Measures].[Total Gross Rev], "Percent");                  
+--Added Formatting-------mY---6/7/06
+[Measures].[Contribution Pct Net Rev]= Format( [Measures].[Contribution] /[Measures].[Total Net Revenue], "Percent");                 
+--Added Formatting-------mY---6/7/06 
+
+
+[Measures].[Client Rank by Contribution]= 
+IIF([Client].[Global G Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="GG",
+ RANK([Client].[Global G Number].CURRENTMEMBER,
+ ORDER([Client].[Global G Number].MEMBERS,[Measures].[Contribution],BASC)),
+   IIF([Client].[Super Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="S",
+    RANK([Client].[Super Number].CURRENTMEMBER,
+    ORDER([Client].[Super Number].MEMBERS,[Measures].[Contribution],BASC)),
+      IIF([Client].[G Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="G",
+       RANK([Client].[G Number].CURRENTMEMBER,
+       ORDER([Client].[G Number].MEMBERS,[Measures].[Contribution],BASC)),
+         IIF([Client].[Master Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="M",
+          RANK([Client].[Master Number].CURRENTMEMBER,
+          ORDER([Client].[Master Number].MEMBERS,[Measures].[Contribution],BASC)),
+IIF([Client].[Global G Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="GG",
+ RANK([Client].[Global G Name].CURRENTMEMBER,
+ ORDER([Client].[Global G Name].MEMBERS,[Measures].[Contribution],BASC)),
+   IIF([Client].[Super Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="S",
+    RANK([Client].[Super Name].CURRENTMEMBER,
+    ORDER([Client].[Super Name].MEMBERS,[Measures].[Contribution],BASC)),
+      IIF([Client].[G Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="G",
+       RANK([Client].[G Name].CURRENTMEMBER,
+       ORDER([Client].[G Name].MEMBERS,[Measures].[Contribution],BASC)),
+         IIF([Client].[Master Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="M",
+          RANK([Client].[Master Name].CURRENTMEMBER,
+          ORDER([Client].[Master Name].MEMBERS,[Measures].[Contribution],BASC)),
+          "N/A"
+                )
+            )
+           )
+          )
+         )
+      )
+   )
+);               
+
+[Measures].[Client Rank by Gross Rev]=
+IIF([Client].[Global G Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="GG",
+ RANK([Client].[Global G Number].CURRENTMEMBER,
+ ORDER([Client].[Global G Number].MEMBERS,[Measures].[Total Gross Rev],BDESC)),
+   IIF([Client].[Super Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="S",
+    RANK([Client].[Super Number].CURRENTMEMBER,
+    ORDER([Client].[Super Number].MEMBERS,[Measures].[Total Gross Rev],BDESC)),
+      IIF([Client].[G Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="G",
+       RANK([Client].[G Number].CURRENTMEMBER,
+       ORDER([Client].[G Number].MEMBERS,[Measures].[Total Gross Rev],BDESC)),
+         IIF([Client].[Master Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="M",
+          RANK([Client].[Master Number].CURRENTMEMBER,
+          ORDER([Client].[Master Number].MEMBERS,[Measures].[Total Gross Rev],BDESC)),
+            IIF([Client].[Global G Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="GG",
+              RANK([Client].[Global G Name].CURRENTMEMBER,
+              ORDER([Client].[Global G Name].MEMBERS,[Measures].[Total Gross Rev],BASC)),
+                IIF([Client].[Super Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="S",
+                   RANK([Client].[Super Name].CURRENTMEMBER,
+                   ORDER([Client].[Super Name].MEMBERS,[Measures].[Total Gross Rev],BASC)),
+                    IIF([Client].[G Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="G",
+                     RANK([Client].[G Name].CURRENTMEMBER,
+                     ORDER([Client].[G Name].MEMBERS,[Measures].[Total Gross Rev],BASC)),
+                        IIF([Client].[Master Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="M",
+                         RANK([Client].[Master Name].CURRENTMEMBER,
+                         ORDER([Client].[Master Name].MEMBERS, [Measures].[Total Gross Rev],BASC)),
+              "N/A"
+                )
+            )
+           )
+          )
+        )
+      )
+   )
+);              
+CREATE MEMBER CURRENTCUBE.[MEASURES].[Rank By Gross REv]
+ AS IIF([Client].[Global G Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="GG",
+ RANK([Client].[Global G Number].CURRENTMEMBER,
+ ORDER([Client].[Global G Number].MEMBERS,[Measures].[Total Gross Rev],BDESC)),
+   IIF([Client].[Super Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="S",
+    RANK([Client].[Super Number].CURRENTMEMBER,
+    ORDER([Client].[Super Number].MEMBERS,[Measures].[Total Gross Rev],BDESC)),
+      IIF([Client].[G Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="G",
+       RANK([Client].[G Number].CURRENTMEMBER,
+       ORDER([Client].[G Number].MEMBERS,[Measures].[Total Gross Rev],BDESC)),
+         IIF([Client].[Master Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="M",
+          RANK([Client].[Master Number].CURRENTMEMBER,
+          ORDER([Client].[Master Number].MEMBERS,[Measures].[Total Gross Rev],BDESC)),
+           IIF([Client].[Global G Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="GG",
+              RANK([Client].[Global G Name].CURRENTMEMBER,
+              ORDER([Client].[Global G Name].MEMBERS,[Measures].[Total Gross Rev],BASC)),
+                IIF([Client].[Super Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="S",
+                   RANK([Client].[Super Name].CURRENTMEMBER,
+                   ORDER([Client].[Super Name].MEMBERS,[Measures].[Total Gross Rev],BASC)),
+                    IIF([Client].[G Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="G",
+                     RANK([Client].[G Name].CURRENTMEMBER,
+                     ORDER([Client].[G Name].MEMBERS,[Measures].[Total Gross Rev],BASC)),
+                        IIF([Client].[Master Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="M",
+                         RANK([Client].[Master Name].CURRENTMEMBER,
+                         ORDER([Client].[Master Name].MEMBERS, [Measures].[Total Gross Rev],BASC)),
+              "N/A"
+                )
+            )
+           )
+          )
+
+         )
+      )
+   )
+), 
+VISIBLE = 0;               
+[Measures].[Client Rank by Net Rev]=
+IIF([Client].[Global G Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="GG",
+ RANK([Client].[Global G Number].CURRENTMEMBER,
+ ORDER([Client].[Global G Number].MEMBERS,[Measures].[Total Net Revenue],BDESC)),
+   IIF([Client].[Super Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="S",
+    RANK([Client].[Super Number].CURRENTMEMBER,
+    ORDER([Client].[Super Number].MEMBERS,[Measures].[Total Net Revenue],BDESC)),
+      IIF([Client].[G Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="G",
+       RANK([Client].[G Number].CURRENTMEMBER,
+       ORDER([Client].[G Number].MEMBERS,[Measures].[Total Net Revenue],BDESC)),
+         IIF([Client].[Master Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="M",
+          RANK([Client].[Master Number].CURRENTMEMBER,
+          ORDER([Client].[Master Number].MEMBERS,[Measures].[Total Net Revenue],BDESC)),
+          IIF([Client].[Global G Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="GG",
+              RANK([Client].[Global G Name].CURRENTMEMBER,
+              ORDER([Client].[Global G Name].MEMBERS,[Measures].[Total Net Revenue],BASC)),
+                IIF([Client].[Super Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="S",
+                   RANK([Client].[Super Name].CURRENTMEMBER,
+                   ORDER([Client].[Super Name].MEMBERS,[Measures].[Total Net Revenue],BASC)),
+                    IIF([Client].[G Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="G",
+                     RANK([Client].[G Name].CURRENTMEMBER,
+                     ORDER([Client].[G Name].MEMBERS,[Measures].[Total Net Revenue],BASC)),
+                        IIF([Client].[Master Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="M",
+                         RANK([Client].[Master Name].CURRENTMEMBER,
+                         ORDER([Client].[Master Name].MEMBERS, [Measures].[Total Net Revenue],BASC)),
+              "N/A"
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+);             
+
+[Measures].[Client Rank by Contribution]=IIF([Client].[Global G Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="GG",
+ RANK([Client].[Global G Number].CURRENTMEMBER,
+ ORDER([Client].[Global G Number].MEMBERS,[Measures].[Contribution],BDESC)),
+   IIF([Client].[Super Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="S",
+    RANK([Client].[Super Number].CURRENTMEMBER,
+    ORDER([Client].[Super Number].MEMBERS,[Measures].[Contribution],BDESC)),
+      IIF([Client].[G Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="G",
+       RANK([Client].[G Number].CURRENTMEMBER,
+       ORDER([Client].[G Number].MEMBERS,[Measures].[Contribution],BDESC)),
+         IIF([Client].[Master Number].CURRENTMEMBER.Properties( "PRNT_PROP" )="M",
+          RANK([Client].[Master Number].CURRENTMEMBER,
+          ORDER([Client].[Master Number].MEMBERS,[Measures].[Contribution],BDESC)),
+          IIF([Client].[Global G Name].CURRENTMEMBER.Properties( "PRNT_PROP" )= "GG",
+              RANK([Client].[Global G Name].CURRENTMEMBER,
+              ORDER([Client].[Global G Name].MEMBERS,[Measures].[Contribution],BASC)),
+                IIF([Client].[Super Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="S",
+                   RANK([Client].[Super Name].CURRENTMEMBER,
+                   ORDER([Client].[Super Name].MEMBERS,[Measures].[Contribution],BASC)),
+                    IIF([Client].[G Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="G",
+                     RANK([Client].[G Name].CURRENTMEMBER,
+                     ORDER([Client].[G Name].MEMBERS,[Measures].[Contribution],BASC)),
+                        IIF([Client].[Master Name].CURRENTMEMBER.Properties( "PRNT_PROP" )="M",
+                         RANK([Client].[Master Name].CURRENTMEMBER,
+                         ORDER([Client].[Master Name].MEMBERS, [Measures].[Contribution],BASC)),
+              "N/A"
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+);              
+/*_________________VN________added names 6/1/06 _________*/
+
+            
+
+--  -------------------------------------
+-- Research tiers conversion VN
+[Measures].[USA Alt Exec Chann]= iif([Measures].[USA Alt Exec Chann]=-1,"N/A",[Measures].[USA Alt Exec Chann]);            
+[Measures].[USA Alt Exec Chann Cash]=iif([Measures].[USA Alt Exec Chann Cash]=-1,"N/A",[Measures].[USA Alt Exec Chann Cash]);            
+[Measures].[USA Alt Exec Chann Derivs]=iif([Measures].[USA Alt Exec Chann Derivs]=-1,"N/A",[Measures].[USA Alt Exec Chann Derivs]);            
+[Measures].[USA Alt Exec Chann Progs]=iif([Measures].[USA Alt Exec Chann Progs]=-1,"N/A",[Measures].[USA Alt Exec Chann Progs]);            
+[Measures].[USA B- Sheet GCS]	=iif(	[Measures].[USA B- Sheet GCS]	=-1, "N/A", 	[Measures].[USA B- Sheet GCS]	);            
+[Measures].[USA B- Sheet GCS P- Broker]	=iif(	[Measures].[USA B- Sheet GCS P- Broker]	=-1, "N/A", 	[Measures].[USA B- Sheet GCS P- Broker]	);            
+[Measures].[USA Cap]	=iif(	[Measures].[USA Cap]	=-1, "N/A", 	[Measures].[USA Cap]	);            
+[Measures].[USA Cap Cash]	=iif(	[Measures].[USA Cap Cash]	=-1, "N/A", 	[Measures].[USA Cap Cash]	);            
+[Measures].[USA Cap Convtls]	=iif(	[Measures].[USA Cap Convtls]	=-1, "N/A", 	[Measures].[USA Cap Convtls]	);            
+[Measures].[USA Cap Derivs]	=iif(	[Measures].[USA Cap Derivs]	=-1, "N/A", 	[Measures].[USA Cap Derivs]	);            
+[Measures].[USA Cap GCS]	=iif(	[Measures].[USA Cap GCS]	=-1, "N/A", 	[Measures].[USA Cap GCS]	);            
+[Measures].[USA Cap Progs]	=iif(	[Measures].[USA Cap Progs]	=-1, "N/A", 	[Measures].[USA Cap Progs]	);            
+[Measures].[USA Corp Access]	=iif(	[Measures].[USA Corp Access]	=-1, "N/A", 	[Measures].[USA Corp Access]	);            
+[Measures].[USA Corp Access Cash]	=iif(	[Measures].[USA Corp Access Cash]	=-1, "N/A", 	[Measures].[USA Corp Access Cash]	);            
+[Measures].[USA RI]	=iif(	[Measures].[USA RI]	=-1, "N/A", 	[Measures].[USA RI]	);            
+[Measures].[USA RI Basic Industries]	=iif(	[Measures].[USA RI Basic Industries]	=-1, "N/A", 	[Measures].[USA RI Basic Industries]	);            
+[Measures].[USA RI Consumer]	=iif(	[Measures].[USA RI Consumer]	=-1, "N/A", 	[Measures].[USA RI Consumer]	);            
+[Measures].[USA RI Convtls Rsh]	=iif(	[Measures].[USA RI Convtls Rsh]	=-1, "N/A", 	[Measures].[USA RI Convtls Rsh]	);            
+[Measures].[USA RI Finl Servs]	=iif(	[Measures].[USA RI Finl Servs]	=-1, "N/A", 	[Measures].[USA RI Finl Servs]	);            
+[Measures].[USA RI Health Care]	=iif(	[Measures].[USA RI Health Care]	=-1, "N/A", 	[Measures].[USA RI Health Care]	);            
+[Measures].[USA RI Industs]	=iif(	[Measures].[USA RI Industs]	=-1, "N/A", 	[Measures].[USA RI Industs]	);            
+[Measures].[USA RI Internet  Media]	=iif(	[Measures].[USA RI Internet  Media]	=-1, "N/A", 	[Measures].[USA RI Internet  Media]	);            
+[Measures].[USA RI Quant Rsh]	=iif(	[Measures].[USA RI Quant Rsh]	=-1, "N/A", 	[Measures].[USA RI Quant Rsh]	);            
+[Measures].[USA RI Retail]	=iif(	[Measures].[USA RI Retail]	=-1, "N/A", 	[Measures].[USA RI Retail]	);            
+[Measures].[USA RI Servs]	=iif(	[Measures].[USA RI Servs]	=-1, "N/A", 	[Measures].[USA RI Servs]	);            
+[Measures].[USA RI Strategy]	=iif(	[Measures].[USA RI Strategy]	=-1, "N/A", 	[Measures].[USA RI Strategy]	);            
+[Measures].[USA RI Technology]	=iif(	[Measures].[USA RI Technology]	=-1, "N/A", 	[Measures].[USA RI Technology]	);            
+[Measures].[USA RI Telecoms]	=iif(	[Measures].[USA RI Telecoms]	=-1, "N/A", 	[Measures].[USA RI Telecoms]	);            
+[Measures].[USA RI Energy Power]	=iif(	[Measures].[USA RI Energy Power]	=-1, "N/A", 	[Measures].[USA RI Energy Power]	);            
+[Measures].[USA Synd NI Allctn]	=iif(	[Measures].[USA Synd NI Allctn]	=-1, "N/A", 	[Measures].[USA Synd NI Allctn]	);            
+[Measures].[USA Synd NI Allctn Cash]	=iif(	[Measures].[USA Synd NI Allctn Cash]	=-1, "N/A", 	[Measures].[USA Synd NI Allctn Cash]	);            
+[Measures].[USA Synd NI Allctn Convtls]	=iif(	[Measures].[USA Synd NI Allctn Convtls]	=-1, "N/A", 	[Measures].[USA Synd NI Allctn Convtls]	);            
+[Measures].[USA Synd NI Allctn Derivs]	=iif(	[Measures].[USA Synd NI Allctn Derivs]	=-1, "N/A", 	[Measures].[USA Synd NI Allctn Derivs]	);            
+[Measures].[AS Alt Exec Chann]	=iif(	[Measures].[AS Alt Exec Chann]	=-1, "N/A", 	[Measures].[AS Alt Exec Chann]	);            
+[Measures].[AS Alt Exec Chann Cash]	=iif(	[Measures].[AS Alt Exec Chann Cash]	=-1, "N/A", 	[Measures].[AS Alt Exec Chann Cash]	);            
+[Measures].[AS Alt Exec Chann Derivs]	=iif(	[Measures].[AS Alt Exec Chann Derivs]	=-1, "N/A", 	[Measures].[AS Alt Exec Chann Derivs]	);            
+[Measures].[AS Alt Exec Chann Progs]	=iif(	[Measures].[AS Alt Exec Chann Progs]	=-1, "N/A", 	[Measures].[AS Alt Exec Chann Progs]	);            
+[Measures].[AS B- Sheet GCS]	=iif(	[Measures].[AS B- Sheet GCS]	=-1, "N/A", 	[Measures].[AS B- Sheet GCS]	);            
+[Measures].[AS B- Sheet GCS P- Broker]	=iif(	[Measures].[AS B- Sheet GCS P- Broker]	=-1, "N/A", 	[Measures].[AS B- Sheet GCS P- Broker]	);            
+[Measures].[AS Cap]	=iif(	[Measures].[AS Cap]	=-1, "N/A", 	[Measures].[AS Cap]	);            
+[Measures].[AS Cap Cash]	=iif(	[Measures].[AS Cap Cash]	=-1, "N/A", 	[Measures].[AS Cap Cash]	);            
+[Measures].[AS Cap Convtls]	=iif(	[Measures].[AS Cap Convtls]	=-1, "N/A", 	[Measures].[AS Cap Convtls]	);            
+[Measures].[AS Cap Derivs]	=iif(	[Measures].[AS Cap Derivs]	=-1, "N/A", 	[Measures].[AS Cap Derivs]	);            
+[Measures].[AS Cap GCS]	=iif(	[Measures].[AS Cap GCS]	=-1, "N/A", 	[Measures].[AS Cap GCS]	);            
+[Measures].[AS Cap Progs]	=iif(	[Measures].[AS Cap Progs]	=-1, "N/A", 	[Measures].[AS Cap Progs]	);            
+[Measures].[AS Corp Access]	=iif(	[Measures].[AS Corp Access]	=-1, "N/A", 	[Measures].[AS Corp Access]	);            
+[Measures].[AS Corp Access Cash]	=iif(	[Measures].[AS Corp Access Cash]	=-1, "N/A", 	[Measures].[AS Corp Access Cash]	);            
+[Measures].[AS RI]	=iif(	[Measures].[AS RI]	=-1, "N/A", 	[Measures].[AS RI]	);            
+[Measures].[AS RI Autos  Auto Parts]	=iif(	[Measures].[AS RI Autos  Auto Parts]	=-1, "N/A", 	[Measures].[AS RI Autos  Auto Parts]	);            
+[Measures].[AS RI Banks]	=iif(	[Measures].[AS RI Banks]	=-1, "N/A", 	[Measures].[AS RI Banks]	);            
+[Measures].[AS RI B-casting  Media]	=iif(	[Measures].[AS RI B-casting  Media]	=-1, "N/A", 	[Measures].[AS RI B-casting  Media]	);            
+[Measures].[AS RI Computer Hardware]	=iif(	[Measures].[AS RI Computer Hardware]	=-1, "N/A", 	[Measures].[AS RI Computer Hardware]	);            
+[Measures].[AS RI Consumer E-trncs]	=iif(	[Measures].[AS RI Consumer E-trncs]	=-1, "N/A", 	[Measures].[AS RI Consumer E-trncs]	);            
+[Measures].[AS RI Convtls Rsh]	=iif(	[Measures].[AS RI Convtls Rsh]	=-1, "N/A", 	[Measures].[AS RI Convtls Rsh]	);            
+[Measures].[AS RI Custom Products]	=iif(	[Measures].[AS RI Custom Products]	=-1, "N/A", 	[Measures].[AS RI Custom Products]	);            
+[Measures].[AS RI Electr Comps]	=iif(	[Measures].[AS RI Electr Comps]	=-1, "N/A", 	[Measures].[AS RI Electr Comps]	);            
+[Measures].[AS RI Food  Bvrge]	=iif(	[Measures].[AS RI Food  Bvrge]	=-1, "N/A", 	[Measures].[AS RI Food  Bvrge]	);            
+[Measures].[AS RI IT Servs n Software]	=iif(	[Measures].[AS RI IT Servs n Software]	=-1, "N/A", 	[Measures].[AS RI IT Servs n Software]	);            
+[Measures].[AS RI Macro  Economics]	=iif(	[Measures].[AS RI Macro  Economics]	=-1, "N/A", 	[Measures].[AS RI Macro  Economics]	);            
+[Measures].[AS RI Metals  Mining]	=iif(	[Measures].[AS RI Metals  Mining]	=-1, "N/A", 	[Measures].[AS RI Metals  Mining]	);            
+[Measures].[AS RI Non Bank Finls]	=iif(	[Measures].[AS RI Non Bank Finls]	=-1, "N/A", 	[Measures].[AS RI Non Bank Finls]	);            
+[Measures].[AS RI Oil  GAS]	=iif(	[Measures].[AS RI Oil  GAS]	=-1, "N/A", 	[Measures].[AS RI Oil  GAS]	);            
+[Measures].[AS RI Property  Construct]	=iif(	[Measures].[AS RI Property  Construct]	=-1, "N/A", 	[Measures].[AS RI Property  Construct]	);            
+[Measures].[AS RI Quant Rsh]	=iif(	[Measures].[AS RI Quant Rsh]	=-1, "N/A", 	[Measures].[AS RI Quant Rsh]	);            
+[Measures].[AS RI Retail]	=iif(	[Measures].[AS RI Retail]	=-1, "N/A", 	[Measures].[AS RI Retail]	);            
+[Measures].[AS RI Telecoms Equipment]	=iif(	[Measures].[AS RI Telecoms Equipment]	=-1, "N/A", 	[Measures].[AS RI Telecoms Equipment]	);            
+[Measures].[AS RI Telecoms Servs]	=iif(	[Measures].[AS RI Telecoms Servs]	=-1, "N/A", 	[Measures].[AS RI Telecoms Servs]	);            
+[Measures].[AS RI Tobacco]	=iif(	[Measures].[AS RI Tobacco]	=-1, "N/A", 	[Measures].[AS RI Tobacco]	);            
+[Measures].[AS RI Transt  W-housing]	=iif(	[Measures].[AS RI Transt  W-housing]	=-1, "N/A", 	[Measures].[AS RI Transt  W-housing]	);            
+[Measures].[AS RI Utilities]	=iif(	[Measures].[AS RI Utilities]	=-1, "N/A", 	[Measures].[AS RI Utilities]	);            
+[Measures].[AS RI S- Conduct]	=iif(	[Measures].[AS RI S- Conduct]	=-1, "N/A", 	[Measures].[AS RI S- Conduct]	);            
+[Measures].[AS Synd NI Allctn]	=iif(	[Measures].[AS Synd NI Allctn]	=-1, "N/A", 	[Measures].[AS Synd NI Allctn]	);            
+[Measures].[AS Synd NI Allctn Cash]	=iif(	[Measures].[AS Synd NI Allctn Cash]	=-1, "N/A", 	[Measures].[AS Synd NI Allctn Cash]	);            
+[Measures].[AS Synd NI Allctn Convtls]	=iif(	[Measures].[AS Synd NI Allctn Convtls]	=-1, "N/A", 	[Measures].[AS Synd NI Allctn Convtls]	);            
+[Measures].[AS Synd NI Allctn Derivs]	=iif(	[Measures].[AS Synd NI Allctn Derivs]	=-1, "N/A", 	[Measures].[AS Synd NI Allctn Derivs]	);            
+[Measures].[EU Alt Exec Chann]	=iif(	[Measures].[EU Alt Exec Chann]	=-1, "N/A", 	[Measures].[EU Alt Exec Chann]	);            
+[Measures].[EU Alt Exec Chann Cash]	=iif(	[Measures].[EU Alt Exec Chann Cash]	=-1, "N/A", 	[Measures].[EU Alt Exec Chann Cash]	);            
+[Measures].[EU Alt Exec Chann Derivs]	=iif(	[Measures].[EU Alt Exec Chann Derivs]	=-1, "N/A", 	[Measures].[EU Alt Exec Chann Derivs]	);            
+[Measures].[EU Alt Exec Chann Progs]	=iif(	[Measures].[EU Alt Exec Chann Progs]	=-1, "N/A", 	[Measures].[EU Alt Exec Chann Progs]	);            
+[Measures].[EU B- Sheet GCS]	=iif(	[Measures].[EU B- Sheet GCS]	=-1, "N/A", 	[Measures].[EU B- Sheet GCS]	);            
+[Measures].[EU B- Sheet GCS P- Broker]	=iif(	[Measures].[EU B- Sheet GCS P- Broker]	=-1, "N/A", 	[Measures].[EU B- Sheet GCS P- Broker]	);            
+[Measures].[EU Cap]	=iif(	[Measures].[EU Cap]	=-1, "N/A", 	[Measures].[EU Cap]	);            
+[Measures].[EU Cap Cash]	=iif(	[Measures].[EU Cap Cash]	=-1, "N/A", 	[Measures].[EU Cap Cash]	);            
+[Measures].[EU Cap Convtls]	=iif(	[Measures].[EU Cap Convtls]	=-1, "N/A", 	[Measures].[EU Cap Convtls]	);            
+[Measures].[EU Cap Derivs]	=iif(	[Measures].[EU Cap Derivs]	=-1, "N/A", 	[Measures].[EU Cap Derivs]	);            
+[Measures].[EU Cap GCS]	=iif(	[Measures].[EU Cap GCS]	=-1, "N/A", 	[Measures].[EU Cap GCS]	);            
+[Measures].[EU Cap Progs]	=iif(	[Measures].[EU Cap Progs]	=-1, "N/A", 	[Measures].[EU Cap Progs]	);            
+[Measures].[EU Corp Access]	=iif(	[Measures].[EU Corp Access]	=-1, "N/A", 	[Measures].[EU Corp Access]	);            
+[Measures].[EU Corp Access Cash]	=iif(	[Measures].[EU Corp Access Cash]	=-1, "N/A", 	[Measures].[EU Corp Access Cash]	);            
+[Measures].[EU RI]	=iif(	[Measures].[EU RI]	=-1, "N/A", 	[Measures].[EU RI]	);            
+[Measures].[EU RI Autos  Auto Parts]	=iif(	[Measures].[EU RI Autos  Auto Parts]	=-1, "N/A", 	[Measures].[EU RI Autos  Auto Parts]	);            
+[Measures].[EU RI Banks]	=iif(	[Measures].[EU RI Banks]	=-1, "N/A", 	[Measures].[EU RI Banks]	);            
+[Measures].[EU RI Biotechnology]	=iif(	[Measures].[EU RI Biotechnology]	=-1, "N/A", 	[Measures].[EU RI Biotechnology]	);            
+[Measures].[EU RI Bvrges]	=iif(	[Measures].[EU RI Bvrges]	=-1, "N/A", 	[Measures].[EU RI Bvrges]	);            
+[Measures].[EU RI Chemicals]	=iif(	[Measures].[EU RI Chemicals]	=-1, "N/A", 	[Measures].[EU RI Chemicals]	);            
+[Measures].[EU RI Convtls Rsh]	=iif(	[Measures].[EU RI Convtls Rsh]	=-1, "N/A", 	[Measures].[EU RI Convtls Rsh]	);            
+[Measures].[EU RI Food]	=iif(	[Measures].[EU RI Food]	=-1, "N/A", 	[Measures].[EU RI Food]	);            
+[Measures].[EU RI Industs]	=iif(	[Measures].[EU RI Industs]	=-1, "N/A", 	[Measures].[EU RI Industs]	);            
+[Measures].[EU RI Insurance]	=iif(	[Measures].[EU RI Insurance]	=-1, "N/A", 	[Measures].[EU RI Insurance]	);            
+[Measures].[EU RI Luxury Goods]	=iif(	[Measures].[EU RI Luxury Goods]	=-1, "N/A", 	[Measures].[EU RI Luxury Goods]	);            
+[Measures].[EU RI Media]	=iif(	[Measures].[EU RI Media]	=-1, "N/A", 	[Measures].[EU RI Media]	);            
+[Measures].[EU RI Metals  Mining]	=iif(	[Measures].[EU RI Metals  Mining]	=-1, "N/A", 	[Measures].[EU RI Metals  Mining]	);            
+[Measures].[EU RI Oil  GAS]	=iif(	[Measures].[EU RI Oil  GAS]	=-1, "N/A", 	[Measures].[EU RI Oil  GAS]	);            
+[Measures].[EU RI Pharm AS]	=iif(	[Measures].[EU RI Pharm AS]	=-1, "N/A", 	[Measures].[EU RI Pharm AS]	);            
+[Measures].[EU RI Quant Rsh]	=iif(	[Measures].[EU RI Quant Rsh]	=-1, "N/A", 	[Measures].[EU RI Quant Rsh]	);            
+[Measures].[EU RI Retail]	=iif(	[Measures].[EU RI Retail]	=-1, "N/A", 	[Measures].[EU RI Retail]	);            
+[Measures].[EU RI Servs  Specl Situans]	=iif(	[Measures].[EU RI Servs  Specl Situans]	=-1, "N/A", 	[Measures].[EU RI Servs  Specl Situans]	);            
+[Measures].[EU RI Speclty Finance]	=iif(	[Measures].[EU RI Speclty Finance]	=-1, "N/A", 	[Measures].[EU RI Speclty Finance]	);            
+[Measures].[EU RI Strategy]	=iif(	[Measures].[EU RI Strategy]	=-1, "N/A", 	[Measures].[EU RI Strategy]	);            
+[Measures].[EU RI Tech Equipment]	=iif(	[Measures].[EU RI Tech Equipment]	=-1, "N/A", 	[Measures].[EU RI Tech Equipment]	);            
+[Measures].[EU RI Tech Semis]	=iif(	[Measures].[EU RI Tech Semis]	=-1, "N/A", 	[Measures].[EU RI Tech Semis]	);            
+[Measures].[EU RI Telecoms Servs]	=iif(	[Measures].[EU RI Telecoms Servs]	=-1, "N/A", 	[Measures].[EU RI Telecoms Servs]	);            
+[Measures].[EU RI Tobacco]	=iif(	[Measures].[EU RI Tobacco]	=-1, "N/A", 	[Measures].[EU RI Tobacco]	);            
+[Measures].[EU RI Utilities]	=iif(	[Measures].[EU RI Utilities]	=-1, "N/A", 	[Measures].[EU RI Utilities]	);            
+[Measures].[EU Synd NI Allctn]	=iif(	[Measures].[EU Synd NI Allctn]	=-1, "N/A", 	[Measures].[EU Synd NI Allctn]	);            
+[Measures].[EU Synd NI Allctn Cash]	=iif(	[Measures].[EU Synd NI Allctn Cash]	=-1, "N/A", 	[Measures].[EU Synd NI Allctn Cash]	);            
+[Measures].[EU Synd NI Allctn Convtls]	=iif(	[Measures].[EU Synd NI Allctn Convtls]	=-1, "N/A", 	[Measures].[EU Synd NI Allctn Convtls]	);            
+[Measures].[EU Synd NI Allctn Derivs]	=iif(	[Measures].[EU Synd NI Allctn Derivs]	=-1, "N/A", 	[Measures].[EU Synd NI Allctn Derivs]	);            
+[Measures].[JPN Alt Exec Chann]	=iif(	[Measures].[JPN Alt Exec Chann]	=-1, "N/A", 	[Measures].[JPN Alt Exec Chann]	);            
+[Measures].[JPN Alt Exec Chann Cash]	=iif(	[Measures].[JPN Alt Exec Chann Cash]	=-1, "N/A", 	[Measures].[JPN Alt Exec Chann Cash]	);            
+[Measures].[JPN Alt Exec Chann Derivs]	=iif(	[Measures].[JPN Alt Exec Chann Derivs]	=-1, "N/A", 	[Measures].[JPN Alt Exec Chann Derivs]	);            
+[Measures].[JPN Alt Exec Chann Progs]	=iif(	[Measures].[JPN Alt Exec Chann Progs]	=-1, "N/A", 	[Measures].[JPN Alt Exec Chann Progs]	);            
+[Measures].[JPN B- Sheet GCS]	=iif(	[Measures].[JPN B- Sheet GCS]	=-1, "N/A", 	[Measures].[JPN B- Sheet GCS]	);            
+[Measures].[JPN B- Sheet GCS P- Broker]	=iif(	[Measures].[JPN B- Sheet GCS P- Broker]	=-1, "N/A", 	[Measures].[JPN B- Sheet GCS P- Broker]	);            
+[Measures].[JPN Cap]	=iif(	[Measures].[JPN Cap]	=-1, "N/A", 	[Measures].[JPN Cap]	);            
+[Measures].[JPN Cap Cash]	=iif(	[Measures].[JPN Cap Cash]	=-1, "N/A", 	[Measures].[JPN Cap Cash]	);            
+[Measures].[JPN Cap Convtls]	=iif(	[Measures].[JPN Cap Convtls]	=-1, "N/A", 	[Measures].[JPN Cap Convtls]	);            
+[Measures].[JPN Cap Derivs]	=iif(	[Measures].[JPN Cap Derivs]	=-1, "N/A", 	[Measures].[JPN Cap Derivs]	);            
+[Measures].[JPN Cap GCS]	=iif(	[Measures].[JPN Cap GCS]	=-1, "N/A", 	[Measures].[JPN Cap GCS]	);            
+[Measures].[JPN Cap Progs]	=iif(	[Measures].[JPN Cap Progs]	=-1, "N/A", 	[Measures].[JPN Cap Progs]	);            
+[Measures].[JPN Corp Access]	=iif(	[Measures].[JPN Corp Access]	=-1, "N/A", 	[Measures].[JPN Corp Access]	);            
+[Measures].[JPN Corp Access Cash]	=iif(	[Measures].[JPN Corp Access Cash]	=-1, "N/A", 	[Measures].[JPN Corp Access Cash]	);            
+[Measures].[JPN RI]	=iif(	[Measures].[JPN RI]	=-1, "N/A", 	[Measures].[JPN RI]	);            
+[Measures].[JPN RI Autos  Auto Parts]	=iif(	[Measures].[JPN RI Autos  Auto Parts]	=-1, "N/A", 	[Measures].[JPN RI Autos  Auto Parts]	);            
+[Measures].[JPN RI Banks]	=iif(	[Measures].[JPN RI Banks]	=-1, "N/A", 	[Measures].[JPN RI Banks]	);            
+[Measures].[JPN RI B-casting  Media]	=iif(	[Measures].[JPN RI B-casting  Media]	=-1, "N/A", 	[Measures].[JPN RI B-casting  Media]	);            
+[Measures].[JPN RI Consumer E-trncs]	=iif(	[Measures].[JPN RI Consumer E-trncs]	=-1, "N/A", 	[Measures].[JPN RI Consumer E-trncs]	);            
+[Measures].[JPN RI Convtls Rsh]	=iif(	[Measures].[JPN RI Convtls Rsh]	=-1, "N/A", 	[Measures].[JPN RI Convtls Rsh]	);            
+[Measures].[JPN RI Custom Products]	=iif(	[Measures].[JPN RI Custom Products]	=-1, "N/A", 	[Measures].[JPN RI Custom Products]	);            
+[Measures].[JPN RI Economics]	=iif(	[Measures].[JPN RI Economics]	=-1, "N/A", 	[Measures].[JPN RI Economics]	);            
+[Measures].[JPN RI Electronic Components]	=iif(	[Measures].[JPN RI Electronic Components]	=-1, "N/A", 	[Measures].[JPN RI Electronic Components]	);            
+[Measures].[JPN RI Food Bvrge  Tobacco]	=iif(	[Measures].[JPN RI Food Bvrge  Tobacco]	=-1, "N/A", 	[Measures].[JPN RI Food Bvrge  Tobacco]	);            
+[Measures].[JPN RI Games Software]	=iif(	[Measures].[JPN RI Games Software]	=-1, "N/A", 	[Measures].[JPN RI Games Software]	);            
+[Measures].[JPN RI Non Bank Finls]	=iif(	[Measures].[JPN RI Non Bank Finls]	=-1, "N/A", 	[Measures].[JPN RI Non Bank Finls]	);            
+[Measures].[JPN RI Pharm AS]	=iif(	[Measures].[JPN RI Pharm AS]	=-1, "N/A", 	[Measures].[JPN RI Pharm AS]	);            
+[Measures].[JPN RI Property  Construct]	=iif(	[Measures].[JPN RI Property  Construct]	=-1, "N/A", 	[Measures].[JPN RI Property  Construct]	);            
+[Measures].[JPN RI Quant Rsh]	=iif(	[Measures].[JPN RI Quant Rsh]	=-1, "N/A", 	[Measures].[JPN RI Quant Rsh]	);            
+[Measures].[JPN RI Regional Banks]	=iif(	[Measures].[JPN RI Regional Banks]	=-1, "N/A", 	[Measures].[JPN RI Regional Banks]	);            
+[Measures].[JPN RI Telecom]	=iif(	[Measures].[JPN RI Telecom]	=-1, "N/A", 	[Measures].[JPN RI Telecom]	);            
+[Measures].[JPN RI Indust E-trncs  SPE]	=iif(	[Measures].[JPN RI Indust E-trncs  SPE]	=-1, "N/A", 	[Measures].[JPN RI Indust E-trncs  SPE]	);            
+[Measures].[JPN Synd NI Allctn]	=iif(	[Measures].[JPN Synd NI Allctn]	=-1, "N/A", 	[Measures].[JPN Synd NI Allctn]	);            
+[Measures].[JPN Synd NI Allctn Cash]	=iif(	[Measures].[JPN Synd NI Allctn Cash]	=-1, "N/A", 	[Measures].[JPN Synd NI Allctn Cash]	);            
+[Measures].[JPN Synd NI Allctn Convtls]	=iif(	[Measures].[JPN Synd NI Allctn Convtls]	=-1, "N/A", 	[Measures].[JPN Synd NI Allctn Convtls]	);            
+[Measures].[JPN Synd NI Allctn Convtls]	=iif(	[Measures].[JPN Synd NI Allctn Convtls]	=-1, "N/A", 	[Measures].[JPN Synd NI Allctn Convtls]	);            
+[Measures].[JPN Synd NI Allctn Derivs]	=iif(	[Measures].[JPN Synd NI Allctn Derivs]	=-1, "N/A", 	[Measures].[JPN Synd NI Allctn Derivs]	);           
+-- addded for format invisible calc measures 5/24/06 VN
+
+CREATE MEMBER CURRENTCUBE.[MEASURES].[Pst Exec Cost]
+ AS ([Measures].[Total Fac Loss]+[Measures].[Trading]
++[Measures].[Variable NPE]+[Measures].[Sales-Trading])/[Measures].[Total Net Revenue], 
+FORMAT_STRING = "Percent", 
+BACK_COLOR = 14671839 /*R=223, G=223, B=223*/, 
+VISIBLE = 0; 
+CREATE MEMBER CURRENTCUBE.[MEASURES].[Pst Research Costs]
+ AS ([Measures].[Portfolio Sales]+[Measures].[Sector Sales]
++[Measures].[Equity Research]+[Measures].[ECM Syndicate]+ [Measures].[IMD Payout])/[Measures].[Total Net Revenue], 
+FORMAT_STRING = "Percent", 
+VISIBLE = 0;      
+    
+CREATE MEMBER CURRENTCUBE.[MEASURES].[0 Loss Ratio Scn]
+ AS ([Measures].[Contribution]-[Measures].[Gross Rev NI]-[Measures].[ECM Syndicate]
+-[Measures].[Total Fac Loss])/[Measures].[Gross Rev Sec], 
+FORMAT_STRING = "Percent", 
+VISIBLE = 0;      
+/*5/25/06 VN*/
+CREATE MEMBER CURRENTCUBE.[MEASURES].[15 Loss Ratio Scn]
+ AS ([Measures].[Contribution]-[Measures].[Gross Rev NI]-[Measures].[ECM Syndicate]
+-[Measures].[Total Fac Loss]+( [Measures].[Gross Rev Sec]*.15))/[Measures].[Gross Rev Sec], 
+FORMAT_STRING = "Percent", 
+VISIBLE = 0;      
+/*5/25/06 VN*/
+CREATE MEMBER CURRENTCUBE.[MEASURES].[30 Loss Ratio Scn]
+ AS ([Measures].[Contribution]-[Measures].[Gross Rev NI]-[Measures].[ECM Syndicate]
+-[Measures].[Total Fac Loss]+( [Measures].[Gross Rev Sec]*.3))/
+[Measures].[Gross Rev Sec], 
+FORMAT_STRING = "Percent", 
+VISIBLE = 0;      
+/*5/25/06 VN*/
+CREATE MEMBER CURRENTCUBE.[MEASURES].[50 Loss Ratio Scn]
+ AS ([Measures].[Contribution]-[Measures].[Gross Rev NI]-[Measures].[ECM Syndicate]
+-[Measures].[Total Fac Loss]+( [Measures].[Gross Rev Sec]*.5))/
+[Measures].[Gross Rev Sec], 
+FORMAT_STRING = "Percent", 
+VISIBLE = 0;      
+
+--_______________________________________________
+-- new measures 5/18/06 -- VN -----
+[Measures].[Execution Costs Pct]= ([Measures].[Total Fac Loss] + [Measures].[Sales-Trading] 
++ [Measures].[Trading] + [Measures].[Variable NPE] + [Measures].[Connectivity] + 
+[Measures].[Admin] + [Measures].[Tri-Party Fees] + [Measures].[Business Advisory] +
+[Measures].[Cap Intro] + [Measures].[Client Svc]) / [Measures].[Total Gross Rev]; 
+--[Measures].[Pst Exec Cost];     
+FORMAT_STRING ([Measures].[Execution Costs Pct])= "Percent";     
+FORE_COLOR([Measures].[Execution Costs Pct]) = 
+    iif([Measures].[Execution Costs Pct]>=0,0 /*Black*/,255 /*Red*/);  
+--________________    
+[Measures].[Research Costs Pct]=([Measures].[Total Sales Expense] + [Measures].[Equity Research] 
++ [Measures].[Convertibles Research] + [Measures].[Derivative Research] 
++ [Measures].[ECM Syndicate] + [Measures].[TNE Expense] + [Measures].[Quants]) / [Measures].[Total Gross Rev]; 
+--[Measures].[Pst Research Costs];           
+FORMAT_STRING ([Measures].[Research Costs Pct])= "Percent";     
+FORE_COLOR([Measures].[Research Costs Pct]) = 
+    iif([Measures].[Research Costs Pct]>=0,0 /*Black*/,255 /*Red*/);   
+--_________________________________________5/25/2006
+[Measures].[Gross Contr Margin]=[Measures].[Contribution] / [Measures].[Total Gross Rev]; 
+ FORMAT_STRING ([Measures].[Gross Contr Margin])= "Percent";     
+ FORE_COLOR([Measures].[Gross Contr Margin]) = 
+    iif([Measures].[Gross Contr Margin]>=0,0 /*Black*/,255 /*Red*/);   
+
+--__________________________ new
+[Measures].[Execution Split Pct] = ([Measures].[Total Fac Loss] 
++ [Measures].[Sales-Trading] + [Measures].[Trading] + [Measures].[Variable NPE] 
++ [Measures].[Connectivity] + [Measures].[Admin] + [Measures].[Tri-Party Fees] 
++ [Measures].[Business Advisory] +[Measures].[Cap Intro] + [Measures].[Client Svc]) / ([Measures].[Total Expenses] + [Measures].[Total Fac Loss]); 
+FORMAT_STRING ([Measures].[Execution Split Pct])= "Percent";     
+ FORE_COLOR([Measures].[Execution Split Pct]) = 
+    iif([Measures].[Execution Split Pct]>=0,0 /*Black*/,255 /*Red*/);   
+--______________________________
+[Measures].[Research Split Pct] = ([Measures].[Total Sales Expense] + [Measures].[Equity Research] 
++ [Measures].[Convertibles Research] + [Measures].[Derivative Research] + [Measures].[ECM Syndicate] 
++ [Measures].[TNE Expense] + [Measures].[Quants]) / ([Measures].[Total Expenses] + [Measures].[Total Fac Loss]); 
+FORMAT_STRING ([Measures].[Research Split Pct])= "Percent";     
+ FORE_COLOR([Measures].[Research Split Pct]) = 
+    iif([Measures].[Research Split Pct]>=0,0 /*Black*/,255 /*Red*/);  
+
+-- added 5/24/06 VN
+[Measures].[Execution vs Research Split]= CStr(CInt ([Measures].[Pst Exec Cost]*100/([Measures].[Pst Exec Cost]+[Measures].[Research Costs Pct])))+
+"% / "+ CStr(CInt([Measures].[Research Costs Pct]*100/([Measures].[Pst Exec Cost]+[Measures].[Research Costs Pct])))+"%";      
+FORE_COLOR([Measures].[Execution vs Research Split])=255;   
+BACK_COLOR([Measures].[Execution vs Research Split]) = 14671839;  
+FONT_FLAGS([Measures].[Execution vs Research Split]) =1; 
+-- 5/25/2006 VN
+--0 Pct
+[Measures].[Nil Loss Ratio Scenario]=([Measures].[Gross Rev Sec] + [Measures].[Total Expenses]  + ([Measures].[Gross Rev Sec]  * 0)) / [Measures].[Gross Rev Sec];     
+FORMAT_STRING ([Measures].[Nil Loss Ratio Scenario])= "Percent";     
+FORE_COLOR([Measures].[Nil Loss Ratio Scenario]) = 
+    iif([Measures].[Nil Loss Ratio Scenario]>=0,0 /*Black*/,255 /*Red*/);   
+ --15 Pct  
+[Measures].[15Pct Loss Ratio Scenario]=([Measures].[Gross Rev Sec] + [Measures].[Total Expenses]  + ([Measures].[Gross Rev Sec]  * .15)) / [Measures].[Gross Rev Sec];     
+--[MEASURES].[15 Loss Ratio Scn];    
+FORMAT_STRING ([Measures].[15Pct Loss Ratio Scenario])= "Percent";     
+FORE_COLOR([Measures].[15Pct Loss Ratio Scenario]) = 
+    iif([Measures].[15Pct Loss Ratio Scenario]>=0,0 /*Black*/,255 /*Red*/);   
+ --30 Pct 
+[Measures].[30Pct Loss Ratio Scenario]=([Measures].[Gross Rev Sec] + [Measures].[Total Expenses]  + ([Measures].[Gross Rev Sec]  * .3)) / [Measures].[Gross Rev Sec];     
+--[MEASURES].[30 Loss Ratio Scn];    
+FORMAT_STRING ([Measures].[30Pct Loss Ratio Scenario])= "Percent";     
+FORE_COLOR([Measures].[30Pct Loss Ratio Scenario]) = 
+    iif([Measures].[30Pct Loss Ratio Scenario]>=0,0 /*Black*/,255 /*Red*/); 
+ --50 Pct  
+[Measures].[50Pct Loss Ratio Scenario]=([Measures].[Gross Rev Sec] + [Measures].[Total Expenses]  + ([Measures].[Gross Rev Sec]  * .5)) / [Measures].[Gross Rev Sec];     
+--[MEASURES].[50 Loss Ratio Scn];    
+FORMAT_STRING ([Measures].[50Pct Loss Ratio Scenario])= "Percent";     
+FORE_COLOR([Measures].[50Pct Loss Ratio Scenario]) = 
+    iif([Measures].[50Pct Loss Ratio Scenario]>=0,0 /*Black*/,255 /*Red*/); 
+
+
+/*---MY-------------------------------------------------------------*/
+/*---Time Intelligence Calculations---------------------------------*/
+/*---Moved these calc to the end of the calculations---06/05/2006---*/
+
+CREATE MEMBER CURRENTCUBE.[Time Period].[Time Calculations].[Year to Date]
+ AS "NA", 
+VISIBLE = 1;                  
+
+Scope(
+       /*{
+         [Measures].[Threshold Value],
+         [Measures].[AS RI],
+         [Measures].[AS RI Autos  Auto Parts],
+         [Measures].[AS RI Banks],
+         [Measures].[AS RI B-casting  Media],
+         [Measures].[AS RI Computer Hardware],
+         [Measures].[AS RI Consumer E-trncs],
+         [Measures].[AS RI Custom Products],
+         [Measures].[AS RI Electr Comps],
+         [Measures].[AS RI Food  Bvrge],
+         [Measures].[AS RI IT Servs n Software],
+         [Measures].[AS RI Macro  Economics],
+         [Measures].[AS RI Metals  Mining],
+         [Measures].[AS RI Non Bank Finls],
+         [Measures].[AS RI Oil  GAS],
+         [Measures].[AS RI Property  Construct],
+         [Measures].[AS RI Retail],
+         [Measures].[AS RI S- Conduct],
+         [Measures].[AS RI Telecoms Equipment],
+         [Measures].[AS RI Telecoms Servs],
+         [Measures].[AS RI Tobacco],
+         [Measures].[AS RI Transt  W-housing],
+         [Measures].[AS RI Utilities],
+         [Measures].[AS RI Quant Rsh],
+         [Measures].[AS RI Convtls Rsh],
+         [Measures].[AS Synd NI Allctn],
+         [Measures].[AS Synd NI Allctn Cash],
+         [Measures].[AS Synd NI Allctn Derivs],
+         [Measures].[AS Synd NI Allctn Convtls],
+         [Measures].[AS Corp Access],
+         [Measures].[AS Corp Access Cash],
+         [Measures].[AS Cap],
+         [Measures].[AS Cap Cash],
+         [Measures].[AS Cap Progs],
+         [Measures].[AS Cap Derivs],
+         [Measures].[AS Cap Convtls],
+         [Measures].[AS Cap GCS],
+         [Measures].[AS Alt Exec Chann],
+         [Measures].[AS Alt Exec Chann Cash],
+         [Measures].[AS Alt Exec Chann Progs],
+         [Measures].[AS Alt Exec Chann Derivs],
+         [Measures].[AS B- Sheet GCS],
+         [Measures].[AS B- Sheet GCS P- Broker],
+         [Measures].[EU RI],
+         [Measures].[EU RI Autos  Auto Parts],
+         [Measures].[EU RI Banks],
+         [Measures].[EU RI Bvrges],
+         [Measures].[EU RI Biotechnology],
+         [Measures].[EU RI Chemicals],
+         [Measures].[EU RI Food],
+         [Measures].[EU RI Industs],
+         [Measures].[EU RI Insurance],
+         [Measures].[EU RI Luxury Goods],
+         [Measures].[EU RI Media],
+         [Measures].[EU RI Metals  Mining],
+         [Measures].[EU RI Oil  GAS],
+         [Measures].[EU RI Pharm AS],
+         [Measures].[EU RI Retail],
+         [Measures].[EU RI Servs  Specl Situans],
+         [Measures].[EU RI Speclty Finance],
+         [Measures].[EU RI Strategy],
+         [Measures].[EU RI Tech Equipment],
+         [Measures].[EU RI Tech Semis],
+         [Measures].[EU RI Telecoms Servs],
+         [Measures].[EU RI Tobacco],
+         [Measures].[EU RI Utilities],
+         [Measures].[EU RI Quant Rsh],
+         [Measures].[EU RI Convtls Rsh],
+         [Measures].[EU Synd NI Allctn],
+         [Measures].[EU Synd NI Allctn Cash],
+         [Measures].[EU Synd NI Allctn Derivs],
+         [Measures].[EU Synd NI Allctn Convtls],
+         [Measures].[EU Corp Access],
+         [Measures].[EU Corp Access Cash],
+         [Measures].[EU Cap],
+         [Measures].[EU Cap Cash],
+         [Measures].[EU Cap Progs],
+         [Measures].[EU Cap Derivs],
+         [Measures].[EU Cap Convtls],
+         [Measures].[EU Cap GCS],
+         [Measures].[EU Alt Exec Chann],
+         [Measures].[EU Alt Exec Chann Cash],
+         [Measures].[EU Alt Exec Chann Progs],
+         [Measures].[EU Alt Exec Chann Derivs],
+         [Measures].[EU B- Sheet GCS],
+         [Measures].[EU B- Sheet GCS P- Broker],
+         [Measures].[JPN RI],
+         [Measures].[JPN RI Autos  Auto Parts],
+         [Measures].[JPN RI Banks],
+         [Measures].[JPN RI B-casting  Media],
+         [Measures].[JPN RI Consumer E-trncs],
+         [Measures].[JPN RI Custom Products],
+         [Measures].[JPN RI Economics],
+         [Measures].[JPN RI Electronic Components],
+         [Measures].[JPN RI Food Bvrge  Tobacco],
+         [Measures].[JPN RI Games Software],
+         [Measures].[JPN RI Indust E-trncs  SPE],
+         [Measures].[JPN RI Non Bank Finls],
+         [Measures].[JPN RI Pharm AS],
+         [Measures].[JPN RI Property  Construct],
+         [Measures].[JPN RI Regional Banks],
+         [Measures].[JPN RI Telecom],
+         [Measures].[JPN RI Quant Rsh],
+         [Measures].[JPN RI Convtls Rsh],
+         [Measures].[JPN Synd NI Allctn],
+         [Measures].[JPN Synd NI Allctn Cash],
+         [Measures].[JPN Synd NI Allctn Derivs],
+         [Measures].[JPN Synd NI Allctn Convtls],
+         [Measures].[JPN Corp Access],
+         [Measures].[JPN Corp Access Cash],
+         [Measures].[JPN Cap],
+         [Measures].[JPN Cap Cash],
+         [Measures].[JPN Cap Progs],
+         [Measures].[JPN Cap Derivs],
+         [Measures].[JPN Cap Convtls],
+         [Measures].[JPN Cap GCS],
+         [Measures].[JPN Alt Exec Chann],
+         [Measures].[JPN Alt Exec Chann Cash],
+         [Measures].[JPN Alt Exec Chann Progs],
+         [Measures].[JPN Alt Exec Chann Derivs],
+         [Measures].[JPN B- Sheet GCS],
+         [Measures].[JPN B- Sheet GCS P- Broker],
+         [Measures].[USA RI],
+         [Measures].[USA RI Basic Industries],
+         [Measures].[USA RI Consumer],
+         [Measures].[USA RI Energy Power],
+         [Measures].[USA RI Finl Servs],
+         [Measures].[USA RI Health Care],
+         [Measures].[USA RI Industs],
+         [Measures].[USA RI Internet  Media],
+         [Measures].[USA RI Retail],
+         [Measures].[USA RI Servs],
+         [Measures].[USA RI Strategy],
+         [Measures].[USA RI Technology],
+         [Measures].[USA RI Telecoms],
+         [Measures].[USA RI Quant Rsh],
+         [Measures].[USA RI Convtls Rsh],
+         [Measures].[USA Synd NI Allctn],
+         [Measures].[USA Synd NI Allctn Cash],
+         [Measures].[USA Synd NI Allctn Derivs],
+         [Measures].[USA Synd NI Allctn Convtls],
+         [Measures].[USA Corp Access],
+         [Measures].[USA Corp Access Cash],
+         [Measures].[USA Cap],
+         [Measures].[USA Cap Cash],
+         [Measures].[USA Cap Progs],
+         [Measures].[USA Cap Derivs],
+         [Measures].[USA Cap Convtls],
+         [Measures].[USA Cap GCS],
+         [Measures].[USA Alt Exec Chann],
+         [Measures].[USA Alt Exec Chann Cash],
+         [Measures].[USA Alt Exec Chann Progs],
+         [Measures].[USA Alt Exec Chann Derivs],
+         [Measures].[USA B- Sheet GCS],
+         [Measures].[USA B- Sheet GCS P- Broker],
+         [Measures].[IMD Payout],
+         [Measures].[TNE Expense],
+         [Measures].[Acct Mgt],
+         [Measures].[Admin],
+         [Measures].[Business Advisory],
+         [Measures].[Cap Intro],
+         [Measures].[Client Orig and Mkt],
+         [Measures].[Client Svc],
+         [Measures].[Connectivity],
+         [Measures].[Convertibles Research],
+         [Measures].[Derivative Research],
+         [Measures].[ECM Syndicate],
+         [Measures].[Equity Research],
+         [Measures].[Portfolio Sales],
+         [Measures].[Quants],
+         [Measures].[Sales-Trading],
+         [Measures].[Sector Sales],
+         [Measures].[Soft Dollar Sales],
+         [Measures].[Trading],
+         [Measures].[Tri-Party Fees],
+         [Measures].[Variable NPE],
+         [Measures].[PB Balances],
+         [Measures].[PB Longs and Mrgn Dbt],
+         [Measures].[Client Orig and Mkt Covrg MD FTE],
+         [Measures].[Client Orig and Mkt Covrg NT FTE],
+         [Measures].[Client Orig and Mkt Covrg SVP FTE],
+         [Measures].[Client Orig and Mkt Covrg VP FTE],
+         [Measures].[Pfolio Sls Covrg MD FTE],
+         [Measures].[Pfolio Sls Covrg NT FTE],
+         [Measures].[Pfolio Sls Covrg SVP FTE],
+         [Measures].[Pfolio Sls Covrg VP FTE],
+         [Measures].[Sect Sls Covrg MD FTE],
+         [Measures].[Sect Sls Covrg NT FTE],
+         [Measures].[Sect Sls Covrg SVP FTE],
+         [Measures].[Sect Sls Covrg VP FTE],
+         [Measures].[Sls-Trd Covrg MD FTE],
+         [Measures].[Sls-Trd Covrg NT FTE],
+         [Measures].[Sls-Trd Covrg SVP FTE],
+         [Measures].[Sls-Trd Covrg VP FTE],
+         [Measures].[Anl Conf Events],
+         [Measures].[Anl Group Events],
+         [Measures].[Anl Indiv Events],
+         [Measures].[Corp Conf Events],
+         [Measures].[Corp Group Events],
+         [Measures].[Corp Indiv Events],
+         [Measures].[Web Bench Usage],
+         [Measures].[Fac Loss NI],
+         [Measures].[Fac Loss Sec],
+         [Measures].[Gross Rev NI],
+         [Measures].[Gross Rev Sec],
+         [Measures].[Fac Loss NI Init],
+         [Measures].[Fac Loss Sec Init],
+         [Measures].[Gross Rev NI Init],
+         [Measures].[Gross Rev Sec Init],
+         [Measures].[ETF Qty NI Curr],
+         [Measures].[ETF Qty Sec Curr],
+         [Measures].[Exec Qty NI Curr],
+         [Measures].[Exec Qty Sec Curr],
+         [Measures].[Non-Exec Qty NI Curr],
+         [Measures].[Non-Exec Qty Sec Curr],
+         [Measures].[Notl Risk Vol USD NI Curr],
+         [Measures].[Notl Risk Vol USD Sec Curr],
+         [Measures].[Notl Vol USD NI Curr],
+         [Measures].[Notl Vol USD Sec Curr],
+         [Measures].[Qty NI Curr],
+         [Measures].[Qty Sec Curr],
+         [Measures].[Risk Qty Sec Curr],
+         [Measures].[Risk Qty NI Curr],
+         [Measures].[Trade Count NI Curr],
+         [Measures].[Trade Count Sec Curr],
+         [Measures].[ETF Qty NI],
+         [Measures].[ETF Qty Sec],
+         [Measures].[Exec Qty NI],
+         [Measures].[Exec Qty Sec],
+         [Measures].[Non-Exec Qty NI],
+         [Measures].[Non-Exec Qty Sec],
+         [Measures].[Notl Risk Vol USD NI],
+         [Measures].[Notl Risk Vol USD Sec],
+         [Measures].[Notl Vol USD NI],
+         [Measures].[Notl Vol USD Sec],
+         [Measures].[Qty NI],
+         [Measures].[Qty Sec],
+         [Measures].[Risk Qty NI],
+         [Measures].[Risk Qty Sec],
+         [Measures].[Trade Count NI],
+         [Measures].[Trade Count Sec],
+         [Measures].[Soft Dollar Adj NI],
+         [Measures].[Soft Dollar Adj Sec],
+         [Measures].[Soft Dollar Adj NI Init],
+         [Measures].[Soft Dollar Adj Sec Init],
+         [Measures].[Net Revenue NI],
+         [Measures].[Net Revenue Sec],
+         [Measures].[Total Fac Loss],
+         [Measures].[Total Gross Rev],
+         [Measures].[Total Soft Dollar Adj],
+         [Measures].[Total Net Revenue],
+         [Measures].[Net Revenue NI Init],
+         [Measures].[Net Revenue Sec Init],
+         [Measures].[Total Fac Loss Init],
+         [Measures].[Total Gross Rev Init],
+         [Measures].[Total Soft Dollar Adj Init],
+         [Measures].[Total Net Revenue Init],
+         [Measures].[Total ETF Qty Curr],
+         [Measures].[Total Exec Qty Curr],
+         [Measures].[Total Listed Opt Qty Curr],
+         [Measures].[Total Non-Exec Qty Curr],
+         [Measures].[Total Notl Risk Vol USD Curr],
+         [Measures].[Total Notl Vol USD Curr],
+         [Measures].[Total Qty Curr],
+         [Measures].[Total Risk Qty Curr],
+         [Measures].[Total Trade Count Curr],
+         [Measures].[Total ETF Qty],
+         [Measures].[Total Exec Qty],
+         [Measures].[Total Listed Opt Qty],
+         [Measures].[Total Non-Exec Qty],
+         [Measures].[Total Notl Risk Vol USD],
+         [Measures].[Total Notl Vol USD],
+         [Measures].[Total Qty],
+         [Measures].[Total Risk Qty],
+         [Measures].[Total Trade Count],
+         [Measures].[Client Origin and Market FTE],
+         [Measures].[Listed Options Volume],
+         [Measures].[Listed Options Qty],
+         [Measures].[Portfolio Sales FTE],
+         [Measures].[Sales-Trading FTE],
+         [Measures].[Sector Sales FTE],
+         [Measures].[Facilitation Loss Ratio],
+         [Measures].[Sales Cost Ratio],
+         [Measures].[Sales-Trade Cost Ratio],
+         [Measures].[Trade Cost Ratio],
+         [Measures].[Research Cost Ratio],
+         [Measures].[Variable NPE Ratio],
+         [Measures].[Facilitation Loss Ratio Bucket],
+         [Measures].[Sales Cost Ratio Bucket],
+         [Measures].[Sales-Trade Cost Ratio Bucket],
+         [Measures].[Trade Cost Ratio Bucket],
+         [Measures].[Research Cost Ratio Bucket],
+         [Measures].[Variable NPE Ratio Bucket],
+         [Measures].[Master Clients Above THD],
+         [Measures].[Global Clients Above THD],
+         [Measures].[Super Clients Above THD],
+         [Measures].[Global G Clients Above THD],
+         [Measures].[Master Clients Avg Ratio],
+         [Measures].[Global Clients Avg Ratio],
+         [Measures].[Super Clients Avg Ratio],
+         [Measures].[Global G Clients Avg Ratio]
+       }*/
+{[Measures].members}
+);                  
+
+  ( [Time Period].[Time Calculations].[Year to Date],    
+    [Time Period].[Fiscal Year].[Fiscal Year].Members,
+    [Time Period].[Time Period Key].Members ) =
+
+  Aggregate(
+             { [Time Period].[Time Calculations].DefaultMember } *
+             PeriodsToDate(
+                            [Time Period].[Time Period].[Fiscal Year],
+                            [Time Period].[Time Period].CurrentMember
+             )
+  );                
+
+End Scope;                  
+
+
+
+CREATE MEMBER CURRENTCUBE.[Time Period].[Time Calculations].[Annualized]
+ AS "NA", 
+VISIBLE = 1;                    
+
+----ANNUALIZATION BY DAILY FACTOR
+Scope(
+       {
+--Trade Revenue Current
+[Measures].[Fac Loss NI],
+[Measures].[Fac Loss Sec],
+[Measures].[Gross Rev NI],
+[Measures].[Gross Rev Sec],
+[Measures].[Net Revenue NI],
+[Measures].[Net Revenue Sec],
+[Measures].[Soft Dollar Adj NI],
+[Measures].[Soft Dollar Adj Sec],
+[Measures].[Total Fac Loss],
+[Measures].[Total Gross Rev],
+[Measures].[Total Net Revenue],
+[Measures].[Total Soft Dollar Adj],
+--Trade Revenue Initial
+[Measures].[Fac Loss NI Init],
+[Measures].[Fac Loss Sec Init],
+[Measures].[Gross Rev NI Init],
+[Measures].[Gross Rev Sec Init],
+[Measures].[Net Revenue NI Init],
+[Measures].[Net Revenue Sec Init],
+[Measures].[Soft Dollar Adj NI Init],
+[Measures].[Soft Dollar Adj Sec Init],
+[Measures].[Total Fac Loss Init],
+[Measures].[Total Gross Rev Init],
+[Measures].[Total Net Revenue Init],
+[Measures].[Total Soft Dollar Adj Init]
+
+
+
+
+       }
+
+);                  
+----ANNUALIZATION BY DAILY FACTOR
+
+  ( [Time Period].[Time Calculations].[Annualized],    
+    [Time Period].[Time Period].[Accounting Period].Members,
+    [Time Period].[Time Period Key].Members ) = 
+ 
+
+
+Format( 
+  [Time Period].[Time Calculations].[Year to Date] * 
+  Val([Time Period].[Accounting Period].currentmember.Properties( "Daily AF" ))                  
+, "Currency") 
+
+;
+
+
+End Scope;                 
+
+
+/*---mY--------------------------------------------*/
+
+----ANNUALIZATION BY MONTHLY FACTORS FOR DOLLARS
+Scope(
+       {
+--Expenses Direct
+[Measures].[IMD Payout],
+[Measures].[TNE Expense],
+--Expenses Indirect
+[Measures].[Acct Mgt],
+[Measures].[Admin],
+[Measures].[Business Advisory],
+[Measures].[Cap Intro],
+[Measures].[Client Orig and Mkt],
+[Measures].[Client Svc],
+[Measures].[Connectivity],
+[Measures].[Convertibles Research],
+[Measures].[Derivative Research],
+[Measures].[ECM Syndicate],
+[Measures].[Equity Research],
+[Measures].[Portfolio Sales],
+[Measures].[Quants],
+[Measures].[Sales-Trading],
+[Measures].[Sector Sales],
+[Measures].[Soft Dollar Sales],
+[Measures].[Trading],
+[Measures].[Tri-Party Fees],
+[Measures].[Variable NPE],
+--Expenses
+[Measures].[Execution Costs Pct],
+[Measures].[Execution vs Research Split],
+[Measures].[Gross Contr Margin],
+[Measures].[Research Costs Pct],
+[Measures].[Total Expenses],
+[Measures].[Total Sales Expense],
+
+--Trade Stats Current
+--[Measures].[ETF Qty NI Curr],
+--[Measures].[ETF Qty Sec Curr],
+--[Measures].[Exec Qty NI Curr],
+--[Measures].[Exec Qty Sec Curr],
+--[Measures].[Non-Exec Qty NI Curr],
+--[Measures].[Non-Exec Qty Sec Curr],
+[Measures].[Notl Risk Vol USD NI Curr],
+[Measures].[Notl Risk Vol USD Sec Curr],
+[Measures].[Notl Vol USD NI Curr],
+[Measures].[Notl Vol USD Sec Curr],
+--[Measures].[Qty NI Curr],
+--[Measures].[Qty Sec Curr],
+--[Measures].[Risk Qty NI Curr],
+--[Measures].[Risk Qty Sec Curr],
+--[Measures].[Total ETF Qty Curr],
+--[Measures].[Total Exec Qty Curr],
+--[Measures].[Total Listed Opt Qty Curr],
+--[Measures].[Total Non-Exec Qty Curr],
+[Measures].[Total Notl Risk Vol USD Curr],
+[Measures].[Total Notl Vol USD Curr],
+--[Measures].[Total Qty Curr],
+--[Measures].[Total Risk Qty Curr],
+--[Measures].[Total Trade Count Curr],
+--[Measures].[Trade Count NI Curr],
+--[Measures].[Trade Count Sec Curr],
+--Trade Stats Initial
+--[Measures].[ETF Qty NI],
+--[Measures].[ETF Qty Sec],
+--[Measures].[Exec Qty NI],
+--[Measures].[Exec Qty Sec],
+--[Measures].[Non-Exec Qty NI],
+--[Measures].[Non-Exec Qty Sec],
+[Measures].[Notl Risk Vol USD NI],
+[Measures].[Notl Risk Vol USD Sec],
+[Measures].[Notl Vol USD NI],
+[Measures].[Notl Vol USD Sec],
+--[Measures].[Qty NI],
+--[Measures].[Qty Sec],
+--[Measures].[Risk Qty NI],
+--[Measures].[Risk Qty Sec],
+--[Measures].[Total ETF Qty],
+--[Measures].[Total Exec Qty],
+--[Measures].[Total Listed Opt Qty],
+--[Measures].[Total Non-Exec Qty],
+[Measures].[Total Notl Risk Vol USD],
+[Measures].[Total Notl Vol USD]
+--[Measures].[Total Qty],
+--[Measures].[Total Risk Qty],
+--[Measures].[Total Trade Count],
+--[Measures].[Trade Count NI],
+--[Measures].[Trade Count Sec],
+--Event
+--[Measures].[Anl Conf Events],
+--[Measures].[Anl Group Events],
+--[Measures].[Anl Indiv Events],
+--[Measures].[Corp Conf Events],
+--[Measures].[Corp Group Events],
+--[Measures].[Corp Indiv Events],
+--[Measures].[Total Event Count],
+--Flow Volatil Drivers
+--[Measures].[Listed Options Qty],
+--[Measures].[Listed Options Volume],
+--PB Drivers
+--[Measures].[PB Balances],
+--[Measures].[PB Longs and Mrgn Dbt],
+--[Measures].[Web Bench Usage]
+
+       }
+
+);                  
+----ANNUALIZATION BY MONTHLY FACTORS FOR DOLLARS
+( [Time Period].[Time Calculations].[Annualized],    
+    [Time Period].[Time Period].[Accounting Period].Members,
+    [Time Period].[Time Period Key].Members ) =
+
+Format( 
+  [Time Period].[Time Calculations].[Year to Date] * 
+ Val([Time Period].[Accounting Period].currentmember.Properties( "Monthly AF" ))                  
+, "Currency");
+
+End Scope;                 
+
+
+
+----ANNUALIZATION BY MONTHLY FACTORS FOR RATES(#,#.00)
+Scope(
+       {
+--Trade Stats Current
+[Measures].[ETF Qty NI Curr],
+[Measures].[ETF Qty Sec Curr],
+[Measures].[Exec Qty NI Curr],
+[Measures].[Exec Qty Sec Curr],
+[Measures].[Non-Exec Qty NI Curr],
+[Measures].[Non-Exec Qty Sec Curr],
+--[Measures].[Notl Risk Vol USD NI Curr],
+--[Measures].[Notl Risk Vol USD Sec Curr],
+--[Measures].[Notl Vol USD NI Curr],
+--[Measures].[Notl Vol USD Sec Curr],
+[Measures].[Qty NI Curr],
+[Measures].[Qty Sec Curr],
+[Measures].[Risk Qty NI Curr],
+[Measures].[Risk Qty Sec Curr],
+[Measures].[Total ETF Qty Curr],
+[Measures].[Total Exec Qty Curr],
+[Measures].[Total Listed Opt Qty Curr],
+[Measures].[Total Non-Exec Qty Curr],
+--[Measures].[Total Notl Risk Vol USD Curr],
+--[Measures].[Total Notl Vol USD Curr],
+[Measures].[Total Qty Curr],
+[Measures].[Total Risk Qty Curr],
+[Measures].[Total Trade Count Curr],
+[Measures].[Trade Count NI Curr],
+[Measures].[Trade Count Sec Curr],
+--Trade Stats Initial
+[Measures].[ETF Qty NI],
+[Measures].[ETF Qty Sec],
+[Measures].[Exec Qty NI],
+[Measures].[Exec Qty Sec],
+[Measures].[Non-Exec Qty NI],
+[Measures].[Non-Exec Qty Sec],
+--[Measures].[Notl Risk Vol USD NI],
+--[Measures].[Notl Risk Vol USD Sec],
+--[Measures].[Notl Vol USD NI],
+--[Measures].[Notl Vol USD Sec],
+[Measures].[Qty NI],
+[Measures].[Qty Sec],
+[Measures].[Risk Qty NI],
+[Measures].[Risk Qty Sec],
+[Measures].[Total ETF Qty],
+[Measures].[Total Exec Qty],
+[Measures].[Total Listed Opt Qty],
+[Measures].[Total Non-Exec Qty],
+--[Measures].[Total Notl Risk Vol USD],
+--[Measures].[Total Notl Vol USD],
+[Measures].[Total Qty],
+[Measures].[Total Risk Qty],
+[Measures].[Total Trade Count],
+[Measures].[Trade Count NI],
+[Measures].[Trade Count Sec],
+--Event
+[Measures].[Anl Conf Events],
+[Measures].[Anl Group Events],
+[Measures].[Anl Indiv Events],
+[Measures].[Corp Conf Events],
+[Measures].[Corp Group Events],
+[Measures].[Corp Indiv Events],
+[Measures].[Total Event Count],
+--Flow Volatil Drivers
+[Measures].[Listed Options Qty],
+[Measures].[Listed Options Volume],
+--PB Drivers
+[Measures].[PB Balances],
+[Measures].[PB Longs and Mrgn Dbt],
+[Measures].[Web Bench Usage]
+
+       }
+
+);                  
+----ANNUALIZATION BY MONTHLY FACTORS FOR RATES(#,#.00)
+( [Time Period].[Time Calculations].[Annualized],    
+    [Time Period].[Time Period].[Accounting Period].Members,
+    [Time Period].[Time Period Key].Members ) =
+
+Format( 
+  [Time Period].[Time Calculations].[Year to Date] * 
+ Val([Time Period].[Accounting Period].currentmember.Properties( "Monthly AF" ))                  
+, "#,#.00");
+
+End Scope;                 
+
+
+
+
+----ANNUALIZATIN BY FACTOR 1
+Scope ( 
+        {
+--Coverage Statistics
+[Measures].[Client Orig and Mkt Covrg MD FTE],
+[Measures].[Client Orig and Mkt Covrg NT FTE],
+[Measures].[Client Orig and Mkt Covrg SVP FTE],
+[Measures].[Client Orig and Mkt Covrg VP FTE],
+[Measures].[Client Origin and Market FTE],
+[Measures].[Pfolio Sls Covrg MD FTE],
+[Measures].[Pfolio Sls Covrg NT FTE],
+[Measures].[Pfolio Sls Covrg SVP FTE],
+[Measures].[Pfolio Sls Covrg VP FTE],
+[Measures].[Portfolio Sales FTE],
+[Measures].[Sales-Trading FTE],
+[Measures].[Sect Sls Covrg MD FTE],
+[Measures].[Sect Sls Covrg NT FTE],
+[Measures].[Sect Sls Covrg SVP FTE],
+[Measures].[Sect Sls Covrg VP FTE],
+[Measures].[Sector Sales FTE],
+[Measures].[Sls-Trd Covrg MD FTE],
+[Measures].[Sls-Trd Covrg NT FTE],
+[Measures].[Sls-Trd Covrg SVP FTE],
+[Measures].[Sls-Trd Covrg VP FTE],
+--Client Resources
+[Measures].[AS Alt Exec Chann],
+[Measures].[AS Alt Exec Chann Cash],
+[Measures].[AS Alt Exec Chann Derivs],
+[Measures].[AS Alt Exec Chann Progs],
+[Measures].[AS B- Sheet GCS],
+[Measures].[AS B- Sheet GCS P- Broker],
+[Measures].[AS Cap],
+[Measures].[AS Cap Cash],
+[Measures].[AS Cap Convtls],
+[Measures].[AS Cap Derivs],
+[Measures].[AS Cap GCS],
+[Measures].[AS Cap Progs],
+[Measures].[AS Corp Access],
+[Measures].[AS Corp Access Cash],
+[Measures].[AS RI],
+[Measures].[AS RI Autos  Auto Parts],
+[Measures].[AS RI Banks],
+[Measures].[AS RI B-casting  Media],
+[Measures].[AS RI Computer Hardware],
+[Measures].[AS RI Consumer E-trncs],
+[Measures].[AS RI Convtls Rsh],
+[Measures].[AS RI Custom Products],
+[Measures].[AS RI Electr Comps],
+[Measures].[AS RI Food  Bvrge],
+[Measures].[AS RI IT Servs n Software],
+[Measures].[AS RI Macro  Economics],
+[Measures].[AS RI Metals  Mining],
+[Measures].[AS RI Non Bank Finls],
+[Measures].[AS RI Oil  GAS],
+[Measures].[AS RI Property  Construct],
+[Measures].[AS RI Quant Rsh],
+[Measures].[AS RI Retail],
+[Measures].[AS RI S- Conduct],
+[Measures].[AS RI Telecoms Equipment],
+[Measures].[AS RI Telecoms Servs],
+[Measures].[AS RI Tobacco],
+[Measures].[AS RI Transt  W-housing],
+[Measures].[AS RI Utilities],
+[Measures].[AS Synd NI Allctn],
+[Measures].[AS Synd NI Allctn Cash],
+[Measures].[AS Synd NI Allctn Convtls],
+[Measures].[AS Synd NI Allctn Derivs],
+[Measures].[EU Alt Exec Chann],
+[Measures].[EU Alt Exec Chann Cash],
+[Measures].[EU Alt Exec Chann Derivs],
+[Measures].[EU Alt Exec Chann Progs],
+[Measures].[EU B- Sheet GCS],
+[Measures].[EU B- Sheet GCS P- Broker],
+[Measures].[EU Cap],
+[Measures].[EU Cap Cash],
+[Measures].[EU Cap Convtls],
+[Measures].[EU Cap Derivs],
+[Measures].[EU Cap GCS],
+[Measures].[EU Cap Progs],
+[Measures].[EU Corp Access],
+[Measures].[EU Corp Access Cash],
+[Measures].[EU RI],
+[Measures].[EU RI Autos  Auto Parts],
+[Measures].[EU RI Banks],
+[Measures].[EU RI Biotechnology],
+[Measures].[EU RI Bvrges],
+[Measures].[EU RI Chemicals],
+[Measures].[EU RI Convtls Rsh],
+[Measures].[EU RI Food],
+[Measures].[EU RI Industs],
+[Measures].[EU RI Insurance],
+[Measures].[EU RI Luxury Goods],
+[Measures].[EU RI Media],
+[Measures].[EU RI Metals  Mining],
+[Measures].[EU RI Oil  GAS],
+[Measures].[EU RI Pharm AS],
+[Measures].[EU RI Quant Rsh],
+[Measures].[EU RI Retail],
+[Measures].[EU RI Servs  Specl Situans],
+[Measures].[EU RI Speclty Finance],
+[Measures].[EU RI Strategy],
+[Measures].[EU RI Tech Equipment],
+[Measures].[EU RI Tech Semis],
+[Measures].[EU RI Telecoms Servs],
+[Measures].[EU RI Tobacco],
+[Measures].[EU RI Utilities],
+[Measures].[EU Synd NI Allctn],
+[Measures].[EU Synd NI Allctn Cash],
+[Measures].[EU Synd NI Allctn Convtls],
+[Measures].[EU Synd NI Allctn Derivs],
+[Measures].[JPN Alt Exec Chann],
+[Measures].[JPN Alt Exec Chann Cash],
+[Measures].[JPN Alt Exec Chann Derivs],
+[Measures].[JPN Alt Exec Chann Progs],
+[Measures].[JPN B- Sheet GCS],
+[Measures].[JPN B- Sheet GCS P- Broker],
+[Measures].[JPN Cap],
+[Measures].[JPN Cap Cash],
+[Measures].[JPN Cap Convtls],
+[Measures].[JPN Cap Derivs],
+[Measures].[JPN Cap GCS],
+[Measures].[JPN Cap Progs],
+[Measures].[JPN Corp Access],
+[Measures].[JPN Corp Access Cash],
+[Measures].[JPN RI],
+[Measures].[JPN RI Autos  Auto Parts],
+[Measures].[JPN RI Banks],
+[Measures].[JPN RI B-casting  Media],
+[Measures].[JPN RI Consumer E-trncs],
+[Measures].[JPN RI Convtls Rsh],
+[Measures].[JPN RI Custom Products],
+[Measures].[JPN RI Economics],
+[Measures].[JPN RI Electronic Components],
+[Measures].[JPN RI Food Bvrge  Tobacco],
+[Measures].[JPN RI Games Software],
+[Measures].[JPN RI Indust E-trncs  SPE],
+[Measures].[JPN RI Non Bank Finls],
+[Measures].[JPN RI Pharm AS],
+[Measures].[JPN RI Property  Construct],
+[Measures].[JPN RI Quant Rsh],
+[Measures].[JPN RI Regional Banks],
+[Measures].[JPN RI Telecom],
+[Measures].[JPN Synd NI Allctn],
+[Measures].[JPN Synd NI Allctn Cash],
+[Measures].[JPN Synd NI Allctn Convtls],
+[Measures].[JPN Synd NI Allctn Derivs],
+[Measures].[USA Alt Exec Chann],
+[Measures].[USA Alt Exec Chann Cash],
+[Measures].[USA Alt Exec Chann Derivs],
+[Measures].[USA Alt Exec Chann Progs],
+[Measures].[USA B- Sheet GCS],
+[Measures].[USA B- Sheet GCS P- Broker],
+[Measures].[USA Cap],
+[Measures].[USA Cap Cash],
+[Measures].[USA Cap Convtls],
+[Measures].[USA Cap Derivs],
+[Measures].[USA Cap GCS],
+[Measures].[USA Cap Progs],
+[Measures].[USA Corp Access],
+[Measures].[USA Corp Access Cash],
+[Measures].[USA RI],
+[Measures].[USA RI Basic Industries],
+[Measures].[USA RI Consumer],
+[Measures].[USA RI Convtls Rsh],
+[Measures].[USA RI Energy Power],
+[Measures].[USA RI Finl Servs],
+[Measures].[USA RI Health Care],
+[Measures].[USA RI Industs],
+[Measures].[USA RI Internet  Media],
+[Measures].[USA RI Quant Rsh],
+[Measures].[USA RI Retail],
+[Measures].[USA RI Servs],
+[Measures].[USA RI Strategy],
+[Measures].[USA RI Technology],
+[Measures].[USA RI Telecoms],
+[Measures].[USA Synd NI Allctn],
+[Measures].[USA Synd NI Allctn Cash],
+[Measures].[USA Synd NI Allctn Convtls],
+[Measures].[USA Synd NI Allctn Derivs]
+});              
+
+----ANNUALIZATIN BY FACTOR 1
+( [Time Period].[Time Calculations].[Annualized],    
+    [Time Period].[Time Period].[Accounting Period].Members,
+    [Time Period].[Time Period Key].Members ) =
+
+   [Time Period].[Time Calculations].[Year to Date];                   
+
+End Scope; 
+
+
+--Calculating Annualized Contribution, Contribution Pct Gross Rev
+--Contribution Pct Net Rev Measures
+--mY----6/7/06
+Scope ( 
+        {
+[Time Period].[Time Calculations].[Annualized]
+}
+);
+
+([Time Period].[Time Period].[Accounting Period].Members,
+    [Time Period].[Time Period Key].Members,
+    [Measures].[Contribution]) = 
+([Measures].[Total Net Revenue] - [Measures].[Total Expenses])
+;
+
+([Time Period].[Time Period].[Accounting Period].Members,
+    [Time Period].[Time Period Key].Members,
+    [Measures].[Contribution Pct Gross Rev]) = 
+Format([Measures].[Contribution]/[Measures].[Total Gross Rev], "Percent")
+;
+
+([Time Period].[Time Period].[Accounting Period].Members,
+    [Time Period].[Time Period Key].Members,
+    [Measures].[Contribution Pct Net Rev]) = 
+Format([Measures].[Contribution] /[Measures].[Total Net Revenue], "Percent")
+;
+
+
+End Scope;
+
+--Calculating YTD Contribution Pct Gross Rev and
+--Contribution Pct Net Rev Measures
+Scope ( 
+        {
+[Time Period].[Time Calculations].[Year to Date]
+}
+);
+
+
+[Measures].[Contribution Pct Gross Rev] = 
+Format([Measures].[Contribution]/[Measures].[Total Gross Rev], "Percent")
+;
+
+([Measures].[Contribution Pct Net Rev]) = 
+Format([Measures].[Contribution] /[Measures].[Total Net Revenue], "Percent")
+;
+
+
+End Scope;
+
+
+
+
+--=[Measures].[Contribution]/[Measures].[Total Gross Rev];                  
+
+--[Measures].[Contribution Pct Net Rev]= [Measures].[Contribution] /[Measures].[Total Net Revenue];    
+
+
+---------------End of Time Intelligence Calculations-------

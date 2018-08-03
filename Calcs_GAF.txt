@@ -1,0 +1,664 @@
+
+
+
+
+
+
+------------------ This logic is a calculation for ***Billing Days*** in the UDM off of the Calendar dimension -----------
+
+Case
+When DayOfWeek = 1 OR DayOfWeek = 7 OR BusinessHoliday = 1 Then NULL
+Else 1
+End
+
+----------------------------------------------------------------------------------------------------------------------
+
+/*
+The CALCULATE command controls the aggregation of leaf cells in the cube.
+If the CALCULATE command is deleted or modified, the data within the cube is affected.
+You should edit this command only if you manually specify how the cube is aggregated.
+*/
+CALCULATE;
+
+/* --------------- Customer Product Purchase Mix measures --------------- */
+CREATE MEMBER CURRENTCUBE.[Measures].[% of Total Units]
+ AS IIF( IsEmpty([Measures].[Units At Product Mix UOM]) 
+OR [Measures].[Units At Product Mix UOM] = 0 
+OR [Product].[By Product].CurrentMember.Level.Ordinal < 1,
+ NULL,
+ [Measures].[Units At Product Mix UOM] / 
+([Measures].[Units At Product Mix UOM], Ancestor([Product].[By Product].CurrentMember, [Product].[By Product].[Business Area]))
+), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+VISIBLE = 1, DISPLAY_FOLDER = 'Customer Product Purchase Mix', ASSOCIATED_MEASURE_GROUP = 'Sales'  ;     
+  
+/* Backlog measures */
+CREATE MEMBER CURRENTCUBE.[Measures].[Total Backlog Units]
+ AS [Measures].[Current Backlog Units] + [Measures].[Next Backlog Units] + [Measures].[Future Backlog Units], 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1, ASSOCIATED_MEASURE_GROUP = 'Backlog';        
+                            
+/* -------------- Sales Plan calculations ---------------- */
+CREATE MEMBER CURRENTCUBE.[Measures].[Plan]
+ AS 
+   IIF( [Product].[By Product].CurrentMember.Level.Ordinal > [Measures].[Sales Plan Product Level],
+    NULL,
+    [Measures].[Sales Plan Amount] 
+   ),
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                                    
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[Month Plan]
+ AS 
+  IIF( [Calendar].[By Calendar].CurrentMember.Level.Ordinal = 4,
+   SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[Plan]),
+   NULL
+  ), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                                    
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Plan]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Year], [Calendar].[By Calendar]),[Measures].[Plan]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                              
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[Plan Units]
+ AS 
+   IIF( [Product].[By Product].CurrentMember.Level.Ordinal > [Measures].[Sales Plan Product Level],
+    NULL,
+    [Measures].[Demand Units] 
+   ),
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                                    
+                       
+CREATE MEMBER CURRENTCUBE.[Measures].[Month Plan Units]
+ AS 
+  IIF( [Calendar].[By Calendar].CurrentMember.Level.Ordinal = 4,
+   SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[Plan Units]),
+   NULL
+  ), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                                    
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Plan Units]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Year], [Calendar].[By Calendar]),[Measures].[Plan Units]), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                              
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Avg Plan Price]
+AS IIF( IsEmpty([Measures].[Plan Units]) OR [Measures].[Plan Units] = 0,
+        Null,
+        [Measures].[Plan] / [Measures].[Plan Units]
+        ),
+FORMAT_STRING = "$#,##0.00;($#,##0.00)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Avg Month Plan Price]
+AS IIF( IsEmpty([Measures].[Month Plan Units]) OR [Measures].[Month Plan Units] = 0,
+        Null,
+        [Measures].[Month Plan] / [Measures].[Month Plan Units]
+        ),
+FORMAT_STRING = "$#,##0.00;($#,##0.00)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Avg YTD Plan Price]
+AS IIF( IsEmpty([Measures].[YTD Plan Units]) OR [Measures].[YTD Plan Units] = 0,
+        Null,
+        [Measures].[YTD Plan] / [Measures].[YTD Plan Units]
+        ),
+FORMAT_STRING = "$#,##0.00;($#,##0.00)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';
+
+/*Returns the aggregate of a numeric expression from the start of a specified period to the current period.*/
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Gross Sales]
+ AS Sum
+(
+  PeriodsToDate
+  (
+     [Calendar].[By Calendar].[Month],
+	 [Calendar].[By Calendar]
+  ),
+  [Measures].[Gross Sales]
+), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                     
+ 
+//
+/*Returns the aggregate of a numeric expression from the start of a specified period to the current period.*/
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Gross Sales]
+ AS Sum
+(
+  PeriodsToDate
+  (
+     [Calendar].[By Calendar].[Year],
+	 [Calendar].[By Calendar]
+  ),
+  [Measures].[Gross Sales]
+), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                  
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Gross Sales Prev Yr]
+ AS (ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]), [Measures].[YTD Gross Sales]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                           
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Net Sales]
+ AS Sum
+(
+  PeriodsToDate
+  (
+     [Calendar].[By Calendar].[Month],
+	 [Calendar].[By Calendar]
+  ),
+  [Measures].[NET SALES]
+), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                     
+ 
+//
+/*Returns the aggregate of a numeric expression from the start of a specified period to the current period.*/
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Net Sales]
+ AS Sum
+(
+  PeriodsToDate
+  (
+     [Calendar].[By Calendar].[Year],
+	 [Calendar].[By Calendar]
+  ),
+  [Measures].[NET SALES]
+), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                       
+
+CREATE MEMBER CURRENTCUBE.[Measures].[QTD Net Sales]
+ AS Sum
+(
+  PeriodsToDate
+  (
+     [Calendar].[By Calendar].[Quarter],
+	 [Calendar].[By Calendar]
+  ),
+  [Measures].[NET SALES]
+), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Net Sales Prev Yr]
+ AS (ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]), [Measures].[MTD NET SALES]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                           
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Net Sales Prev Yr]
+ AS (ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]), [Measures].[YTD NET SALES]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                           
+ 
+/* Units */
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Units]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[UNITS]), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';   
+
+CREATE MEMBER CURRENTCUBE.[Measures].[QTD Units]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Quarter], [Calendar].[By Calendar]),[Measures].[UNITS]), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Units Prev Yr]
+ AS (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD UNITS]), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                          
+                                              
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Units]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Year], [Calendar].[By Calendar]),[Measures].[UNITS]), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                           
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Units Prev Yr]
+ AS (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD UNITS]), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';              
+ 
+// Average (Avg) Price
+CREATE MEMBER CURRENTCUBE.[Measures].[Avg Price]
+ AS IIF( IsEmpty(Units) OR Units=0 , Null, [NET SALES]/[UNITS]), 
+FORMAT_STRING = "$#,##0.00;($#,##0.00)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                    
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Avg Price]
+ AS IIF( IsEmpty([MTD Units]) OR [MTD Units] = 0, NULL, [Measures].[MTD Net Sales] / [Measures].[MTD Units]),
+// AVG(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[Avg Price]), 
+FORMAT_STRING = "$#,##0.00;($#,##0.00)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';    
+              
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Avg Price]
+ AS IIF( IsEmpty([YTD Units]) OR [YTD Units] = 0, NULL, [Measures].[YTD Net Sales] / [Measures].[YTD Units]),
+// AVG(PeriodsToDate([Calendar].[By Calendar].[Year], [Calendar].[By Calendar]),[Measures].[Avg Price]), 
+FORMAT_STRING = "$#,##0.00;($#,##0.00)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';              
+ 
+/* % of */  
+CREATE MEMBER CURRENTCUBE.[Measures].[Net Sales % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]) IS NULL
+     OR IsEmpty(
+                 ( ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]),
+                   [Measures].[NET SALES]
+                 )
+               )
+     OR ( ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]),
+          [Measures].[NET SALES]
+        ) = 0,
+    NULL,
+    (
+      [Calendar].[By Calendar], [Measures].[NET SALES]) / 
+      (
+        ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]),
+        [Measures].[NET SALES]
+      )
+    ), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8, 255 /*Red*/, 0 /*Black*/),
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';     
+  
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Net Sales % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR IsEmpty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD NET SALES]))
+  OR (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD NET SALES]) = 0,
+NULL,
+([Calendar].[By Calendar], [Measures].[MTD NET SALES]) / (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD NET SALES])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8, 255 /*Red*/, 0 /*Black*/),
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                           
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Net Sales % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD NET SALES]))
+  OR (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD NET SALES]) = 0,
+NULL,
+([Calendar].[By Calendar], [Measures].[YTD NET SALES]) / (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD NET SALES])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .9, 255 /*Red*/, 0 /*Black*/),
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                 
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[Net Sales % of Plan]
+ AS IIF( ISEMPTY([Plan]) OR [Plan]=0 OR [Calendar].[By Calendar].CurrentMember.Level.Ordinal = 0, NULL, [Net Sales]/[Plan]),
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                         
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Net Sales % of Plan]
+ AS IIF( ISEMPTY([MONTH PLAN]) OR [MONTH PLAN]=0, NULL, [MTD NET SALES]/[MONTH PLAN]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                            
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Net Sales % of Plan]
+ AS IIF( ISEMPTY([YTD PLAN]) OR [YTD PLAN]=0,NULL,[YTD NET SALES]/[YTD PLAN]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .9 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';               
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[Units % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]) IS NULL
+     OR IsEmpty(
+                 (
+                   ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]),
+                   [Measures].[Units]
+                 )
+               )
+     OR (ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]), [Measures].[Units]) = 0,
+    NULL,
+    (
+      [Calendar].[By Calendar], [Measures].[Units]) / 
+      (
+        ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]),
+        [Measures].[Units]
+      )
+    ), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8, 255 /*Red*/, 0 /*Black*/),
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales'; 
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Units % of Prev Yr]
+ AS IIF( PARALLELPERIOD([Calendar].[By Calendar].[Month],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty(([Calendar].[By Calendar], [Measures].[MTD Units Prev Yr]))
+  OR ([Calendar].[By Calendar], [Measures].[MTD Units Prev Yr]) = 0,
+NULL,
+([Calendar].[By Calendar], [Measures].[MTD Units]) / ([Calendar].[By Calendar], [Measures].[MTD Units Prev Yr])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';            
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Units % of Prev Yr]
+ AS IIF( PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty(([Calendar].[By Calendar], [Measures].[YTD Units Prev Yr]))
+  OR ([Calendar].[By Calendar], [Measures].[YTD Units Prev Yr]) = 0,
+NULL,
+([Calendar].[By Calendar], [Measures].[YTD Units]) / ([Calendar].[By Calendar], [Measures].[YTD Units Prev Yr])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .9 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';            
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[Units % of Plan]
+ AS IIF( ISEMPTY([Plan Units]) OR [Plan Units]=0 OR [Calendar].[By Calendar].CurrentMember.Level.Ordinal = 0, NULL, [Units]/[Plan Units]),
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales'; 
+ 
+/*
+Estimated Measures
+*/ 
+CREATE MEMBER CURRENTCUBE.[Measures].[Est Net Sales]
+ AS IIF( [Measures].[Est Backlog Factor] <> 0,
+     [Measures].[Net Sales] + [Measures].[Est Backlog Factor], 
+     NULL
+    ),
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                  
+              
+CREATE MEMBER CURRENTCUBE.[Measures].[Est MTD Net Sales]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[Est Net Sales]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                   
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est QTD Net Sales]
+ AS IIF( ([Calendar].[By Year].CurrentMember.Name = CStr(Year(Now()))) AND ([Calendar].[By Calendar].CurrentMember.Level.Ordinal = 3 ),
+     [Measures].[QTD Net Sales] + [Measures].[Est Backlog Factor],
+     NULL),
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est YTD Net Sales]
+ AS IIF( [Calendar].[By Year].CurrentMember.Name = CStr(Year(Now())),
+     [Measures].[YTD Net Sales] + [Measures].[Est Backlog Factor],
+     NULL     
+    ), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales'  ;                                   
+                                  
+CREATE MEMBER CURRENTCUBE.[Measures].[Est MTD Net Sales % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD Net Sales])),
+NULL,
+([Calendar].[By Calendar], [Measures].[Est MTD Net Sales]) / (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD Net Sales])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8, 255 /*Red*/, 0 /*Black*/),
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';    
+                                                                        
+CREATE MEMBER CURRENTCUBE.[Measures].[Est YTD Net Sales % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales]))
+  OR (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales]) = 0,
+NULL,
+([Calendar].[By Calendar], [Measures].[Est YTD Net Sales]) / (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .9 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';      
+                                                           
+CREATE MEMBER CURRENTCUBE.[Measures].[Est MTD Net Sales % of Plan]
+ AS IIF( ISEMPTY([MONTH PLAN]) OR [MONTH PLAN]=0, NULL, [EST MTD NET SALES]/[MONTH PLAN]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                            
+   
+CREATE MEMBER CURRENTCUBE.[Measures].[Est YTD Net Sales % of Plan]
+ AS IIF( ISEMPTY([YTD PLAN]) OR [YTD PLAN]=0,NULL,[EST YTD NET SALES]/[YTD PLAN]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .9 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                
+   
+/* Estimated Units */
+CREATE MEMBER CURRENTCUBE.[Measures].[Est Units]
+ AS IIF( [Measures].[Est Backlog Factor Units] <> 0,
+     [Measures].[Units] + [Measures].[Est Backlog Factor Units], 
+     NULL
+    ), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                  
+   
+CREATE MEMBER CURRENTCUBE.[Measures].[Est MTD Units]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[Est Units]),
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                   
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est QTD Units]
+ AS IIF( ([Calendar].[By Year].CurrentMember.Name = CStr(Year(Now()))) AND ([Calendar].[By Calendar].CurrentMember.Level.Ordinal = 3),
+     [Measures].[QTD Units] + [Measures].[Est Backlog Factor Units],
+     NULL     
+    ), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est YTD Units]
+ AS IIF( [Calendar].[By Year].CurrentMember.Name = CStr(Year(Now())),
+     [Measures].[YTD Units] + [Measures].[Est Backlog Factor Units],
+     NULL     
+    ), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';              
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est MTD Units % of Plan]
+ AS IIF( IsEmpty([Month Plan Units]) OR [Month Plan Units]=0, NULL, [Est MTD Units]/[Month Plan Units]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales'; 
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[Est YTD Units % of Plan]
+ AS IIF( IsEmpty([YTD Plan Units]) OR [YTD Plan Units]=0, NULL, [Est YTD Units]/[YTD Plan Units]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .9 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales'; 
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est MTD Units % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR IsEmpty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD Units])),
+NULL,
+([Calendar].[By Calendar], [Measures].[Est MTD Units]) / (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD Units])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8, 255 /*Red*/, 0 /*Black*/),
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';    
+                                                                        
+CREATE MEMBER CURRENTCUBE.[Measures].[Est YTD Units % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR IsEmpty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Units]))
+  OR (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Units]) = 0,
+NULL,
+([Calendar].[By Calendar], [Measures].[Est YTD Units]) / (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Units])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .9 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';  
+
+/* Gross to Net Aggregations */
+CREATE MEMBER CURRENTCUBE.[Measures].[Total Incentives Accrued % of Gross Sales]
+ AS [Measures].[Total Incentives Accrued] / [Measures].[Gross Sales],
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+VISIBLE = 1, DISPLAY_FOLDER = 'Gross to Net\Incentives', ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Total Incentives % of Gross Sales]
+ AS [Measures].[Total Incentives] / [Measures].[Gross Sales],
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+VISIBLE = 1, DISPLAY_FOLDER = 'Gross to Net\Incentives', ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Last Sales Time]
+ AS IIF([MaxERAEOperTimeSales] IS NULL,
+ NULL, 
+left([MaxERAEOperTimeSales],4)+"-"+mid([MaxERAEOperTimeSales],5,2)+"-"+mid([MaxERAEOperTimeSales],7,2)+" "+iif(mid([MaxERAEOperTimeSales],9,2)>"12",mid([MaxERAEOperTimeSales],9,2)-"12",mid([MaxERAEOperTimeSales],9,2))+":"+mid([MaxERAEOperTimeSales],11,2)+":"+mid([MaxERAEOperTimeSales],13,2)+" "+iif(right([MaxERAEOperTimeSales],1)=1,"PM","AM")), 
+VISIBLE = 0 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                    
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Last Backlog Time]
+ AS IIF([MaxERAEOperTimeBacklog] IS NULL,
+ NULL, 
+left([MaxERAEOperTimeBacklog],4)+"-"+mid([MaxERAEOperTimeBacklog],5,2)+"-"+mid([MaxERAEOperTimeBacklog],7,2)+" "+iif(val(mid([MaxERAEOperTimeBacklog],9,2))>12,(mid([MaxERAEOperTimeBacklog],9,2)-"12"),mid([MaxERAEOperTimeBacklog],9,2))+":"+mid([MaxERAEOperTimeBacklog],11,2)+":"+mid([MaxERAEOperTimeBacklog],13,2)+" "+iif(right([MaxERAEOperTimeBacklog],1)=1,"PM","AM")), 
+VISIBLE = 0 ,  ASSOCIATED_MEASURE_GROUP = 'Backlog';                                              
+
+/*
+Begin - Delivered Profit Measures - Tulga Unlusoy 7/25/2009
+*/
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD DP@STD]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[DP@STD]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                               
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STD]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Year], [Calendar].[By Calendar] ),[Measures].[DP@STD]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD DP@STLF]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[DP@STLF]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Year],[Calendar].[By Calendar]) ,[Measures].[DP@STLF]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STD Prev Yr]
+ AS (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD DP@STD]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF Prev Yr]
+ AS (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD DP@STLF]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD DP@STD % of Net Sales]
+ AS IIF( ISEMPTY([MTD Net Sales]) OR [MTD Net Sales]=0,NULL,[MTD DP@STD]/[MTD Net Sales]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD DP@STLF % of Net Sales]
+ AS IIF( ISEMPTY([MTD Net Sales]) OR [MTD Net Sales]=0,NULL,[MTD DP@STLF]/[MTD Net Sales]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STD % of Net Sales]
+ AS IIF( ISEMPTY([YTD Net Sales]) OR [YTD Net Sales]=0,NULL,[YTD DP@STD]/[YTD Net Sales]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF % of Net Sales]
+ AS IIF( ISEMPTY([YTD Net Sales]) OR [YTD Net Sales]=0,NULL,[YTD DP@STLF]/[YTD Net Sales]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF % of YTD Net Sales]
+ AS IIF( ISEMPTY([YTD Net Sales]) OR [YTD Net Sales]=0,NULL,[YTD DP@STLF]/[YTD Net Sales]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                         
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+ OR IsEmpty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD DP@STLF]))
+ OR (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD DP@STLF]) = 0,
+ NULL,
+ ([Calendar].[By Calendar], [Measures].[YTD DP@STLF]) /
+ (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD DP@STLF])
+), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                         
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF % of Net Sales Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+ OR IsEmpty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales]))
+ OR (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales]) = 0,
+ NULL,
+ ([Calendar].[By Calendar], [Measures].[YTD DP@STLF Prev Yr]) /
+ (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales])
+), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\(\5\0\0\%\)", "#0%;(#0%)")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                        
+/*
+End - Delivered Profit Measures
+*/
+
+/* Begin - Billing Day calculations - Tulga Unlusoy 10/18/2010 */
+/*
+CREATE MEMBER CURRENTCUBE.[Measures].[Total Billing Days]
+AS
+Case
+ When [Calendar].[By Calendar].CurrentMember.Level.Ordinal <= 5 Then
+  Count(Descendants([Calendar].[By Calendar].CurrentMember, [Calendar].[By Calendar].[Day])
+        * {[Calendar].[Day of Week].&[2]:[Calendar].[Day of Week].&[6]} -- include weekdays only
+        * {[Calendar].[Business Holiday].&[0]} -- exclude business holidays. 0=false, 1=true
+       )
+End,
+FORMAT_STRING = "#", VISIBLE = 1, DISPLAY_FOLDER = 'Billing Days', ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Current Month Billing Day]
+AS
+ Iif([Calendar].[By Calendar].CurrentMember = Ancestor(StrToMember("[Calendar].[By Calendar].[Day].&["+CStr(Format(Now(),'yyyy-MM-dd'))+"T00:00:00]"), [Calendar].[By Calendar].[Month]),
+  Count(PeriodsToDate([Calendar].[By Calendar].[Month], StrToMember("[Calendar].[By Calendar].[Day].&["+CStr(Format(Now(),'yyyy-MM-dd'))+"T00:00:00]"))
+        * {[Calendar].[Day of Week].&[2]:[Calendar].[Day of Week].&[6]} -- include weekdays only
+        * {[Calendar].[Business Holiday].&[0]} -- exclude business holidays. 0=false, 1=true
+       ),
+ NULL),
+FORMAT_STRING = "#", VISIBLE = 1, DISPLAY_FOLDER = 'Billing Days', ASSOCIATED_MEASURE_GROUP = 'Calendar Measures';
+*/
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[% of Current Month Billing Day]
+AS
+ [Measures].[Current Month Billing Day] / [Measures].[Total Billing Days],
+FORMAT_STRING = "0%", VISIBLE = 1, DISPLAY_FOLDER = 'Billing Days', ASSOCIATED_MEASURE_GROUP = 'Calendar Measures';
+ 
+CREATE MEMBER CURRENTCUBE.[Measures].[Current Month Billing Day]
+AS
+ Iif([Calendar].[By Calendar].CurrentMember = Ancestor(StrToMember("[Calendar].[By Calendar].[Day].&["+CStr(Format(Now(),'yyyy-MM-dd'))+"T00:00:00]"), [Calendar].[By Calendar].[Month]),
+  SUM(PeriodsToDate([Calendar].[By Calendar].[Month],
+                    StrToMember("[Calendar].[By Calendar].[Day].&["+CStr(Format(Now(),'yyyy-MM-dd'))+"T00:00:00]")
+                   ),
+      [Measures].[Total Billing Days]
+     ),
+  NULL),
+FORMAT_STRING = "#", VISIBLE = 1, DISPLAY_FOLDER = 'Billing Days', ASSOCIATED_MEASURE_GROUP = 'Calendar Measures';
+ 
+/* End - Billing Day calculations */
+
+/* Default settings should be placed at the bottom of the script */
+/* Sets the default month to last month with data (nonempty) */
+
+ALTER CUBE IntelliGAF
+UPDATE DIMENSION [Measures],
+DEFAULT_MEMBER = [Current Backlog Gross];                                   
+
+ALTER CUBE IntelliGAF
+UPDATE DIMENSION [Calendar].[By Calendar],
+DEFAULT_MEMBER = Ancestor(StrToMember("[Calendar].[By Calendar].[Day].&[" + VBAMDX!CStr(Format(Now(), 'yyyy-MM-dd')) + "T00:00:00]"), 2);
+//Tail(NonEmpty([Calendar].[By Calendar].[Month].Members),1).Item(0);   
+ 
+//
+//IIF([Calendar].[By Calendar].[Month].CurrentMember IS [Calendar].[By Calendar].[Month].DefaultMember ,
+//     [Measures].[YTD Net Sales] + [Measures].[Est Backlog Factor], 
+//     NULL
+//    )

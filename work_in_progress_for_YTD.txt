@@ -1,0 +1,33 @@
+When [Calendar].[Month].MemberValue<Ancestor(StrToMember("[Calendar].[By Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[Calendar].[By Calendar].[Month]).MemberValue
+Then NULL
+Else NULL
+End
+When [Calendar].[By Calendar].CurrentMember.Level is [Calendar].[By Calendar].[Quarter] 
+Then
+Case 
+When [Calendar].[Quarter].MemberValue=Ancestor(StrToMember("[Calendar].[By Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[Calendar].[By Calendar].[Quarter]).MemberValue
+Then Aggregate(PeriodsToDate([Calendar].[By Calendar].[Quarter],StrToMember("[Calendar].[By Calendar].[Date].&["+CStr(FORMAT(vba!dateadd('q',-1,NOW()),'yyyy-MM-dd'))+"T00:00:00]")),[Measures].[YTD Temp])
+When [Calendar].[Quarter].MemberValue<Ancestor(StrToMember("[Calendar].[By Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[Calendar].[By Calendar].[Quarter]).MemberValue
+Then NULL
+Else NULL
+End
+When [Calendar].[By Calendar].CurrentMember.Level is [DATE].[By Calendar].[Half Year]
+Then 
+Case 
+When [Calendar].[Half Year].MemberValue=Ancestor(StrToMember("[Calendar].[By Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[Calendar].[By Calendar].[Half Year]).MemberValue
+Then Aggregate(PeriodsToDate([Calendar].[By Calendar].[Half Year],StrToMember("[Calendar].[By Calendar].[Date].&["+CStr(FORMAT(vba!dateadd('q',-2,NOW()),'yyyy-MM-dd'))+"T00:00:00]")),[Measures].[YTD Temp])
+When [Calendar].[Half Year].MemberValue<Ancestor(StrToMember("[Calendar].[By Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[Calendar].[By Calendar].[Half Year]).MemberValue
+Then NULL
+Else NULL
+End
+When [Calendar].[By Calendar].CurrentMember.Level is [Calendar].[By Calendar].[Year]
+Then
+Case 
+When [Calendar].[Year].MemberValue=Ancestor(StrToMember("[Calendar].[By Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[Calendar].[By Calendar].[Year]).MemberValue
+Then Aggregate(PeriodsToDate([Calendar].[By Calendar].[Year],StrToMember("[Calendar].[By Calendar].[Date].&["+CStr(FORMAT(vba!dateadd('yyyy',-1,NOW()),'yyyy-MM-dd'))+"T00:00:00]")),[Measures].[YTD Temp])
+When [Calendar].[Year].MemberValue<Ancestor(StrToMember("[Calendar].[By Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[Calendar].[By Calendar].[Year]).MemberValue
+Then NULL
+Else NULL
+End
+Else NULL
+End

@@ -1,0 +1,2216 @@
+Chapter 23 - Business Case Solutions Using MDX
+
+The purpose of the Multidimensional Expressions (MDX) language is to make access to multidimensional data more concise and efficient. However, because MDX reflects the natural complexity of multidimensional data structures, simple business questions may sometimes require complex MDX solutions. 
+
+This chapter draws from a variety of sources to provide solid solutions to some of the more common MDX questions asked by both business and development users alike, presenting and explaining ready-to-run MDX examples for each question. 
+
+The code examples in this chapter are also available on the SQL Server 2000 Resource Kit CD-ROM in the file, \Docs\ChapterCode\CH23Code.txt. For more information, see Chapter 39, "Tools, Samples, eBooks, and More." 
+
+Syntax Conventions 
+
+
+The syntax presented in each example is formatted to provide a better understanding of how the MDX query functions by highlighting the use of each MDX function. All MDX functions and keywords are in uppercase, while all other elements, such as member and set names, are in a case appropriate to the element. 
+
+To better illustrate the use of MDX functions and keywords within the query examples, the query is indented similarly to the way C programming language is indented. 
+
+The formatting of MDX syntax within the examples may not be consistent; the syntax convention is used to make potentially difficult MDX syntax clearer and easier to understand, and the syntax convention rules may be broken to facilitate such clarity and ease of understanding as needed. 
+
+Top of page
+General Questions 
+
+
+The questions in this section pertain to understanding general MDX concepts and their application in common business scenarios. 
+
+How Can I Retrieve Results from Different Cubes?
+One of the most useful functions in MDX for an enterprise-level Microsoft® SQL Server™ 2000 Analysis Services solution is the LookupCube MDX function. Basically, the LookupCube function can evaluate a single MDX statement against a cube other than the cube currently indicated by query context to retrieve a single string or numeric result. 
+
+For example, the Budget cube in the FoodMart 2000 database contains budget information that can be displayed by store. The Sales cube in the FoodMart 2000 database contains sales information that can be displayed by store. Since no virtual cube exists in the FoodMart 2000 database that joins the Sales and Budget cubes together, comparing the two sets of figures would be difficult at best. 
+
+Note In many situations a virtual cube can be used to integrate data from multiple cubes, which will often provide a simpler and more efficient solution than the LookupCube function. This example uses the LookupCube function for purposes of illustration. 
+
+The following MDX query, however, uses the LookupCube function to retrieve unit sales information for each store from the Sales cube, presenting it side by side with the budget information from the Budget cube. 
+
+Code Example 23.1 
+
+WITH MEMBER 
+Measures.[Store Unit Sales]
+AS
+'LookupCube(
+"Sales", 
+"(" + MemberToStr(Store.CurrentMember) + ", Measures.[Unit Sales])"
+)'
+
+SELECT
+{Measures.Amount, Measures.[Store Unit Sales]} ON COLUMNS,
+Store.CA.CHILDREN ON ROWS
+FROM
+Budget
+
+The LookupCube function takes a string expression; additional MDX functions can be used to concatenate the string sent to the referenced cube as demonstrated in the previous MDX query. The results returned by the previous MDX query resemble the following table. 
+
+ Amount Store Unit Sales 
+Alameda
+ ($56,520.00)
+  
+ 
+Beverly Hills
+ $36,183.84
+ 21,333.00
+ 
+Los Angeles
+ $44,563.20
+ 25,663.00
+ 
+San Diego
+ $44,159.14
+ 25,635.00
+ 
+San Francisco
+ $3,593.98
+ 2,117.00
+ 
+
+How Can I Perform Basic Basket Analysis?
+Basket analysis is a topic better suited to data mining discussions, but some basic forms of basket analysis can be handled through the use of MDX queries. 
+
+For example, one method of basket analysis groups customers based on qualification. In the following example, a qualified customer is one who has more than $10,000 in store sales or more than 10 unit sales. The following table illustrates such a report, run against the Sales cube in FoodMart 2000 with qualified customers grouped by the Country and State Province levels of the Customers dimension. The count and store sales total of qualified customers is represented by the Qualified Count and Qualified Sales columns, respectively. 
+
+ Qualified Count Qualified Sales 
+All Customers
+ 4719
+ $553,587.77
+ 
+Canada
+ 0
+  
+ 
+BC
+ 0
+  
+ 
+Mexico
+ 0
+  
+ 
+DF
+ 0
+  
+ 
+...
+  
+  
+ 
+USA
+ 4719
+ $553.587.77
+ 
+CA
+ 2149
+ $151,509.69
+ 
+OR
+ 1008
+ $141,889.84
+ 
+WA
+ 1562
+ $260,178,24
+ 
+
+To accomplish this basic form of basket analysis, the following MDX query constructs two calculated members. The first calculated member uses the MDX Count, Filter, and Descendants functions to create the Qualified Count column, while the second calculated member uses the MDX Sum, Filter, and Descendants functions to create the Qualified Sales column. 
+
+The key to this MDX query is the use of Filter and Descendants together to screen out non-qualified customers. Once screened out, the Sum and Count MDX functions can then be used to provide aggregation data only on qualified customers. 
+
+Code Example 23.2 
+
+WITH 
+MEMBER 
+[Measures].[Qualified Count] 
+AS
+'COUNT(
+FILTER(
+DESCENDANTS(
+Customers.CURRENTMEMBER, 
+[Customers].[Name]
+), ([Measures].[Store Sales]) > 10000 OR 
+([Measures].[Unit Sales]) > 10
+)
+)'
+MEMBER 
+[Measures].[Qualified Sales] 
+AS
+'SUM(
+FILTER(
+DESCENDANTS(
+Customers.CURRENTMEMBER, 
+[Customers].[Name]
+), ([Measures].[Store Sales]) > 10000 OR 
+([Measures].[Unit Sales]) > 10
+), ([Measures].[Store Sales])
+)'
+SELECT
+{[Measures].[Qualified Count], [Measures].[Qualified Sales]} 
+ON COLUMNS,
+DESCENDANTS(
+[Customers].[All Customers], 
+[State Province], 
+SELF_AND_BEFORE) 
+ON ROWS
+FROM 
+Sales
+
+This technique works for a wide variety of business scenarios, and can be expanded on to provide more types of basket analysis. 
+
+How Can I Perform Complex String Comparisons?
+MDX can handle basic string comparisons, but does not include complex string comparison and manipulation functions, for example, for finding substrings in strings or for supporting case-insensitive string comparisons. However, since MDX can take advantage of external function libraries, this question is easily resolved using string manipulation and comparison functions from the Microsoft Visual Basic® for Applications (VBA) external function library. 
+
+For example, you want to report the unit sales of all fruit-based products—not only the sales of fruit, but canned fruit, fruit snacks, fruit juices, and so on. By using the LCase and InStr VBA functions, the following results are easily accomplished in a single MDX query, without complex set construction or explicit member names within the query. 
+
+ Unit Sales 
+Applause Canned Mixed Fruit
+ 205.00
+ 
+Big City Canned Mixed Fruit
+ 204.00
+ 
+...
+ ...
+ 
+Nationeel Raspberry Fruit Roll
+ 167.00
+ 
+Nationeel Strawberry Fruit Roll
+ 138.00
+ 
+
+The following MDX query demonstrates how to achieve the results displayed in the previous table. For each member in the Product dimension, the name of the member is converted to lowercase using the LCase VBA function. Then, the InStr VBA function is used to discover whether or not the name contains the word "fruit". This information is used to then construct a set, using the Filter MDX function, from only those members from the Product dimension that contain the substring "fruit" in their names. 
+
+Code Example 23.3 
+
+SELECT
+{Measures.[Unit Sales]} ON COLUMNS,
+FILTER(
+[Product].[Product Name].MEMBERS, 
+INSTR(
+LCASE([Product].CURRENTMEMBER.NAME), 
+"fruit"
+) <> 0
+)
+ON ROWS 
+FROM
+Sales
+--------------------------------------------
+SELECT
+non empty 
+{
+
+{[Time].[1997].[Q1]: [Time].[1997].[Q3] }*
+{Measures.[Unit Sales],[Measures].[Store Cost],[Measures].[Profit] } ,
+
+{[Time].[1997].[Q4].[10]:[Time].[1997].[Q4].[12] }*
+{Measures.[Unit Sales],[Measures].[Store Cost],[Measures].[Profit] }
+
+
+}
+ON COLUMNS,
+
+ {
+
+FILTER ([Product].[Product Name].Members,INSTR(LCASE([Product].CurrentMember.Name),"Best" )<>0   )
+
+
+}
+
+
+ON ROWS 
+FROM
+Sales
+
+--------------------------------------------------------
+
+
+A wide variety of string manipulation functions are available in the VBA function library. For more information about available VBA string functions, see "Visual Basic For Applications Functions" in SQL Server Books Online. 
+
+How Can I Show Percentages as Measures?
+Another common business question easily answered through MDX is the display of percent values created as available measures. 
+
+For example, the Sales cube in the FoodMart 2000 database contains unit sales for each store in a given city, state, and country, organized along the Sales dimension. A report is requested to show, for California, the percentage of total unit sales attained by each city with a store. The results are illustrated in the following table. 
+
+ Unit Sales Unit Sales Percent 
+Alameda
+  
+  
+ 
+San Francisco
+ 2,117.00
+ 2.83
+ 
+Beverly Hills
+ 21,333.00
+ 28.54
+ 
+San Diego
+ 25,635.00
+ 34.30
+ 
+Los Angeles
+ 25,663.00
+ 34.33
+ 
+
+Because the parent of a member is typically another, aggregated member in a regular dimension, this is easily achieved by the construction of a calculated member, as demonstrated in the following MDX query, using the CurrentMember and Parent MDX functions. 
+
+Code Example 23.4 
+
+WITH
+MEMBER
+Measures.[Unit Sales Percent] AS
+'((Store.CURRENTMEMBER, Measures.[Unit Sales])/
+(Store.CURRENTMEMBER.PARENT, Measures.[Unit Sales])) ',
+FORMAT_STRING = 'Percent'
+SELECT
+{Measures.[Unit Sales], Measures.[Unit Sales Percent]} 
+ON COLUMNS,
+ORDER(
+DESCENDANTS(
+Store. CA,
+Store.[Store City], 
+SELF
+), 
+[Measures].[Unit Sales], 
+ASC
+) 
+ON ROWS
+FROM
+Sales
+
+The MDX query simply takes the unit sales value for each of the members in the Store dimension and divides it by the value of the parent member, then multiplies it by 100 to obtain a percent value. The Order and Descendants MDX functions are used to rank the cities from least to most significant, in terms of unit sales, in California. 
+
+How Can I Show Cumulative Sums as Measures?
+Another common business request, cumulative sums, is useful for business reporting purposes. However, since aggregations are handled in a hierarchical fashion, cumulative sums present some unique challenges in Analysis Services. 
+
+The best way to create a cumulative sum is as a calculated measure in MDX, using the Rank, Head, Order, and Sum MDX functions together. 
+
+For example, the following table illustrates a report that shows two views of employee count in all stores and cities in California, sorted by employee count. The first column shows the aggregated counts for each store and city, while the second column shows aggregated counts for each store, but cumulative counts for each city. 
+
+ Number of Employees Cumulative Number of Employees 
+Los Angeles
+ 62
+ 62
+ 
+Store 7
+ 62
+ 62
+ 
+San Diego
+ 62
+ 124
+ 
+Store 24
+ 62
+ 62
+ 
+Beverly Hills
+ 48
+ 172
+ 
+Store 6
+ 48
+ 48
+ 
+Alameda
+ 17
+ 189
+ 
+HQ
+ 17
+ 17
+ 
+San Francisco
+ 4
+ 193
+ 
+Store 14
+ 4
+ 4
+ 
+
+The cumulative number of employees for San Diego represents the value of both Los Angeles and San Diego, the value for Beverly Hills represents the cumulative total of Los Angeles, San Diego, and Beverly Hills, and so on. 
+
+Since the members within the state of California have been ordered from highest to lowest number of employees, this form of cumulative sum measure provides a form of pareto analysis within each state. 
+
+To support this, the Order function is first used to reorder members accordingly for both the Rank and Head functions. Once reordered, the Rank function is used to supply the ranking of each tuple within the reordered set of members, progressing as each member in the Store dimension is examined. The value is then used to determine the number of tuples to retrieve from the set of reordered members using the Head function. Finally, the retrieved members are then added together using the Sum function to obtain a cumulative sum. The following MDX query demonstrates how all of this works in concert to provide cumulative sums. 
+
+Code Example 23.5 
+
+WITH
+MEMBER
+Measures.[Cumulative No of Employees]
+AS
+'SUM(
+HEAD(
+ORDER(
+{[Store].Siblings}, 
+[Measures].[Number of Employees], 
+BDESC
+) AS OrderedSiblings,
+RANK(
+[Store],
+OrderedSiblings
+)
+),
+[Measures].[Number of Employees]
+)'
+SELECT 
+{[Measures].[Number of Employees], 
+[Measures].[Cumulative No of Employees]} 
+ON COLUMNS,
+ORDER(
+DESCENDANTS(
+Store.CA, 
+[Store State], 
+AFTER
+), 
+[Measures].[Number of Employees], 
+BDESC
+) 
+ON ROWS
+FROM
+HR
+
+As an aside, a named set cannot be used in this situation to replace the duplicate Order function calls. Named sets are evaluated once, when a query is parsed—since the set can change based on the fact that the set can be different for each store member because the set is evaluated for the children of multiple parents, the set does not change with respect to its use in the Sum function. Since the named set is only evaluated once, it would not satisfy the needs of this query. 
+
+How Can I Implement a Logical AND or OR Condition in a WHERE Clause?
+For SQL users, the use of AND and OR logical operators in the WHERE clause of a SQL statement is an essential tool for constructing business queries. However, the WHERE clause of an MDX statement serves a slightly different purpose, and understanding how the WHERE clause is used in MDX can assist in constructing such business queries. 
+
+The WHERE clause in MDX is used to further restrict the results of an MDX query, in effect providing another dimension on which the results of the query are further sliced. As such, only expressions that resolve to a single tuple are allowed. The WHERE clause implicitly supports a logical AND operation involving members across different dimensions, by including the members as part of a tuple. To support logical AND operations involving members within a single dimensions, as well as logical OR operations, a calculated member needs to be defined in addition to the use of the WHERE clause. 
+
+For example, the following MDX query illustrates the use of a calculated member to support a logical OR. The query returns unit sales by quarter and year for all food and drink related products sold in 1997, run against the Sales cube in the FoodMart 2000 database. 
+
+Code Example 23.6 
+
+WITH 
+MEMBER
+[Product].[Food OR Drink] 
+AS
+'([Product].[Food], Measures.[Unit Sales]) + ([Product].[Drink], Measures.[Unit 
+Sales])'
+SELECT
+{Measures.[Unit Sales]}
+ON COLUMNS,
+DESCENDANTS(Time.[1997], [Quarter], SELF_AND_BEFORE)
+ON ROWS
+FROM
+Sales
+WHERE
+[Product].[Food OR Drink]
+
+The calculated member simply adds the values of the Unit Sales measure for the Food and the Drink levels of the Product dimension together. The WHERE clause is then used to restrict return of information only to the calculated member, effectively implementing a logical OR to return information for all time periods that contain unit sales values for either food, drink, or both types of products. 
+
+You can use the Aggregate function in similar situations where all measures are not aggregated by summing. To return the same results in the above example using the Aggregate function, replace the definition for the calculated member with this definition: 
+
+'Aggregate({[Product].[Food], [Product].[Drink]})'
+
+A logical AND, by contrast, can be supported by using two different techniques. If the members used to construct the logical AND reside on different dimensions, all that is required is a WHERE clause that uses a tuple representing all involved members. The following MDX query uses a WHERE clause that effectively restricts the query to retrieve unit sales for drink products in the USA, shown by quarter and year for 1997. 
+
+Code Example 23.7 
+
+SELECT
+{Measures.[Unit Sales]}
+ON COLUMNS,
+DESCENDANTS([Time].[1997], [Quarter], SELF_AND_BEFORE)
+ON ROWS
+FROM
+Sales
+WHERE
+([Product].[Drink], [Store].USA)
+
+The WHERE clause in the previous MDX query effectively provides a logical AND operator, in which all unit sales for 1997 are returned only for drink products and only for those sold in stores in the USA. 
+
+If the members used to construct the logical AND condition reside on the same dimension, you can use a calculated member or a named set to filter out the unwanted members, as demonstrated in the following MDX query. 
+
+Code Example 23.8 
+
+WITH 
+SET
+[Good AND Pearl Stores]
+AS
+'FILTER(
+Store.Members,([Product].[Good], Measures.[Unit Sales]) > 0 AND ([Product].[Pearl], Measures.[Unit Sales]) > 0)'
+
+SELECT
+DESCENDANTS([Time].[1997], [Quarter], SELF_AND_BEFORE)
+ON COLUMNS,
+[Good AND Pearl Stores]
+ON ROWS
+FROM
+Sales
+
+The named set, [Good AND Pearl Stores], restricts the displayed unit sales totals only to those stores that have sold both Good products and Pearl products. 
+
+How Can I Use Custom Member Properties in MDX?
+Member properties are a good way of adding secondary business information to members in a dimension. However, getting that information out can be confusing—member properties are not readily apparent in a typical MDX query. 
+
+Member properties can be retrieved in one of two ways. The easiest and most used method of retrieving member properties is to use the DIMENSION PROPERTIES MDX statement when constructing an axis in an MDX query. 
+
+For example, a member property in the Store dimension in the FoodMart 2000 database details the total square feet for each store. The following MDX query can retrieve this member property as part of the returned cellset. 
+
+Code Example 23.9 
+
+SELECT
+{[Measures].[Units Shipped], [Measures].[Units Ordered]} 
+ON COLUMNS,
+NON EMPTY [Store].[Store Name].MEMBERS
+DIMENSION PROPERTIES [Store].[Store Name].[Store Sqft] 
+ON ROWS
+FROM
+Warehouse
+
+The drawback to using the DIMENSION PROPERTIES statement is that, for most client applications, the member property is not readily apparent. If the previous MDX query is executed in the MDX sample application shipped with SQL Server 2000 Analysis Services, for example, you must double-click the name of the member in the grid to open the Member Properties dialog box, which displays all of the member properties shipped as part of the cellset, including the [Store].[Store Name].[Store Sqft] member property. 
+
+The other method of retrieving member properties involves the creation of a calculated member based on the member property. The following MDX query brings back the total square feet for each store as a measure, included in the COLUMNS axis. 
+
+Code Example 23.10 
+
+WITH
+MEMBER
+Measures.[Store SqFt]
+AS
+'[Store].CURRENTMEMBER.PROPERTIES("Store SQFT")'
+SELECT
+{ [Measures].[Store SQFT], [Measures].[Units Shipped], [Measures].[Units Ordered] } 
+ON COLUMNS,
+[Store].[Store Name].MEMBERS
+ON ROWS
+FROM
+Warehouse
+
+The [Store SqFt] measure is constructed with the Properties MDX function to retrieve the [Store SQFT] member property for each member in the Store dimension. The benefit to this technique is that the calculated member is readily apparent and easily accessible in client applications that do not support member properties. 
+
+Top of page
+Navigation Questions 
+
+
+All of the questions in this section deal specifically with the ability to navigate dimension hierarchies within an MDX query. Drilling up, down, and through multidimensional data is an essential part of user interfaces designed to show query data, but can be difficult to understand and successfully implement using MDX queries. Likewise, the ability to exploit MDX hierarchy navigation functions to compare and contrast values across hierarchical organizations within a dimension is key to the effective use of dimensions within a cube. 
+
+How Can I Drill Down More Than One Level Deep, or Skip Levels When Drilling Down?
+Drilling down is an essential ability for most OLAP products, and Analysis Services is no exception. Several functions exist that support drilling up and down the hierarchy of dimensions within a cube. Typically, drilling up and down the hierarchy is done one level at a time; think of this functionality as a zoom feature for OLAP data. 
+
+There are times, though, when the need to drill down more than one level at the same time, or even skip levels when displaying information about multiple levels, exists for a business scenario. 
+
+For example, you would like to show report results from a query of the Sales cube in the FoodMart 2000 sample database showing sales totals for individual cities and the subtotals for each country, as shown in the following table. 
+
+ Unit Sales 
+Canada
+  
+ 
+Burnaby
+  
+ 
+Cliffside
+  
+ 
+...
+ ...
+ 
+USA
+ 266,773.00
+ 
+Altadena
+ 2,574.00
+ 
+Arcadia
+ 2,440.00
+ 
+...
+ ...
+ 
+
+The Customers dimension, however, has Country, State Province, and City levels. In order to show the above report, you would have to show the Country level and then drill down two levels to show the City level, skipping the State Province level entirely. 
+
+However, the MDX ToggleDrillState and DrillDownMember functions provide drill down functionality only one level below a specified set. To drill down more than one level below a specified set, you need to use a combination of MDX functions, including Descendants, Generate, and Except. This technique essentially constructs a large set that includes all levels between both upper and lower desired levels, then uses a smaller set representing the undesired level or levels to remove the appropriate members from the larger set. 
+
+The following MDX query provides the results as shown in the previous example. 
+
+Code Example 23.11 
+
+SELECT 
+{[Measures].[Unit Sales]} 
+ON COLUMNS,
+EXCEPT(
+GENERATE(
+[Customers].[Country].MEMBERS,
+{DESCENDANTS(
+[Customers].CURRENTMEMBER,
+[Customers].[City], SELF_AND_BEFORE)
+}
+),
+{[Customers].[State Province].MEMBERS}
+) 
+ON ROWS
+FROM 
+Sales
+
+The MDX Descendants function is used to construct a set consisting of the descendants of each member in the Customers dimension. The descendants are determined using the MDX Descendants function, with the descendants of the City level and the level above, the State Province level, for each member of the Customers dimension being added to the set. 
+
+The MDX Generate function now creates a set consisting of all members at the Country level as well as the members of the set generated by the MDX Descendants function. Then, the MDX Except function is used to exclude all members at the State Province level, so the returned set contains members at the Country and City levels. 
+
+Note, however, that the previous MDX query will still order the members according to their hierarchy. Although the returned set contains members at the Country and City levels, the Country, State Province, and City levels determine the order of the members. 
+
+How Do I Get the Topmost Members of a Level Broken Out by an Ancestor Level?
+This type of MDX query is common when only the facts for the lowest level of a dimension within a cube are needed, but information about other levels within the same dimension may also be required to satisfy a specific business scenario. 
+
+For example, a report that shows the unit sales for the store with the highest unit sales from each country is needed for marketing purposes. The following table provides an example of this report, run against the Sales cube in the FoodMart 2000 sample database. 
+
+ Store Country Unit Sales 
+Store 19
+ Canada
+  
+ 
+Store 9
+ Mexico
+  
+ 
+Store 13
+ USA
+ 41,580.00
+ 
+
+This looks simple enough, but the Country Name column provides unexpected difficulty. The values for the Store Country column are taken from the Store Country level of the Store dimension, so the Store Country column is constructed as a calculated member as part of the MDX query, using the MDX Ancestor and Name functions to return the country names for each store. 
+
+A combination of the MDX Generate, TopCount, and Descendants functions are used to create a set containing the top stores in unit sales for each country. 
+
+The following MDX query provides the results as shown in the previous example. 
+
+Code Example 23.12 
+
+WITH MEMBER 
+Measures.[Country Name]
+AS 
+'Ancestor(Store.CurrentMember, [Store Country]).Name'
+SELECT
+{Measures.[Country Name], Measures.[Unit Sales]} 
+ON COLUMNS,
+GENERATE(
+[Store Country].MEMBERS, 
+TOPCOUNT(
+DESCENDANTS(
+[Store].CURRENTMEMBER,
+[Store].[Store Name]
+),1,[Measures].[Unit Sales]
+)
+) 
+ON ROWS
+FROM
+Sales
+
+The MDX Descendants function is used to construct a set consisting of only those members at the Store Name level in the Store dimension. Then, the MDX TopCount function is used to return only the topmost store based on the Unit Sales measure. The MDX Generate function then constructs a set based on the topmost stores, following the hierarchy of the Store dimension. 
+
+Alternate techniques, such as using the MDX Crossjoin function, may not provide the desired results because non-related joins can occur. Since the Store Country and Store Name levels are within the same dimension, they cannot be cross-joined. Another dimension that provides the same regional hierarchy structure, such as the Customers dimension, can be employed with the Crossjoin function. But, using this technique can cause non-related joins and return unexpected results. 
+
+For example, the following MDX query uses the Crossjoin function to attempt to return the same desired results. 
+
+Code Example 23.13 
+
+SELECT
+{Measures.[Unit Sales]}
+ON COLUMNS,
+CROSSJOIN(
+Customers.CHILDREN,
+TOPCOUNT(
+DESCENDANTS(
+[Store].CURRENTMEMBER,
+[Store].[Store Name]
+),1,[Measures].[Unit Sales]
+)
+)
+ON ROWS
+FROM
+Sales
+
+However, some unexpected surprises occur because the topmost member in the Store dimension is cross-joined with all of the children of the Customers dimension, as shown in the following table. 
+
+  Unit Sales 
+Canada
+ Store 13
+  
+ 
+Mexico
+ Store 13
+  
+ 
+USA
+ Store 13
+ 41,580.00
+ 
+
+In this instance, the use of a calculated member to provide store country names is easier to understand and debug than attempting to cross-join across unrelated members. 
+
+Top of page
+Manipulation Questions 
+
+
+The questions addressed in this section deal with the manipulation of dimension hierarchies within MDX queries. Some of the most difficult MDX questions lie within the scope of this section–almost half of the functions in MDX are devoted to the manipulation hierarchies, sets, tuples, and members. 
+
+How Can I Rank or Reorder Members?
+One of the issues commonly encountered in business scenarios is the need to rank the members of a dimension according to their corresponding measure values. The Order MDX function allows you to order a set based on a string or numeric expression evaluated against the members of a set. Combined with other MDX functions, the Order function can support several different types of ranking. 
+
+For example, the Sales cube in the FoodMart 2000 database can be used to show unit sales for each store. However, the business scenario requires a report that ranks the stores from highest to lowest unit sales, individually, of nonconsumable products. 
+
+The following table illustrates the desired report results. 
+
+ Unit Sales 
+Store 13
+ 7,940.00
+ 
+Store 17
+ 6,712.00
+ 
+Store 11
+ 5,076.00
+ 
+...
+ ...
+ 
+HQ
+  
+ 
+
+Because of the requirement that stores be sorted individually, the hierarchy must be broken (in other words, ignored) for the purpose of ranking the stores. The Order function is capable of sorting within the hierarchy, based on the topmost level represented in the set to be sorted, or, by breaking the hierarchy, sorting all of the members of the set as if they existed on the same level, with the same parent. 
+
+The following MDX query illustrates the use of the Order function to rank the members according to unit sales. 
+
+Code Example 23.14 
+
+SELECT
+{[Measures].[Unit Sales]} 
+ON COLUMNS, 
+ORDER(
+[Store].[Store Name].MEMBERS, (Measures.[Unit Sales])
+,BDESC
+) 
+ON ROWS
+FROM
+Sales
+WHERE
+[Product].[Non-Consumable]
+
+The BDESC flag in the Order function instructs the function to sort the members in descending order, breaking the hierarchy to do so. By comparison, the following table represents the results obtained by the above query if the DESC flag, which sorts the members in descending order while following the hierarchy, was used instead. 
+
+ Unit Sales 
+Store 17
+ 6,712.00
+ 
+Store 15
+ 4,639.00
+ 
+Store 3
+ 4,479.00
+ 
+...
+ ...
+ 
+Store 18
+  
+ 
+
+The change in output is caused by the fact that the stores are sorted according to the hierarchy. Store 17, for example, is not the highest-ranked store across all stores in the Store dimension, as shown in the first example. However, in this example, it is the highest ranked store of the [Tacoma] member in the [Store City] level, which is the highest ranked city of the [WA] member in the [Store State] level, which is the highest ranked state of the [USA] member in the [Store Country] level. According to the hierarchy, the members of the [Store Country] level are sorted first, then the members of the [Store City] level for each member in the [Store Country] level, and so on until all members have been sorted. The ranking in the above example reflects this hierarchical sorting behavior. 
+
+How Can I Use Different Calculations for Different Levels in a Dimension?
+This type of MDX query frequently occurs when different aggregations are needed at different levels in a dimension. One easy way to support such functionality is through the use of a calculated measure, created as part of the query, which uses the MDX Descendants function in conjunction with one of the MDX aggregation functions to provide results. 
+
+For example, the Warehouse cube in the FoodMart 2000 database supplies the [Units Ordered] measure, aggregated through the Sum function. But, you would also like to see the average number of units ordered per store. The following table demonstrates the desired results. 
+
+ Units Ordered Average Units Ordered 
+BC
+  
+  
+ 
+DF
+  
+  
+ 
+Guerrero
+  
+  
+ 
+Jalisco
+  
+  
+ 
+Veracruz
+  
+  
+ 
+Yucatan
+  
+  
+ 
+Zacatecas
+  
+  
+ 
+CA
+ 66,307
+ 16,577
+ 
+OR
+ 44,906
+ 22,453
+ 
+WA
+ 116,025
+ 16,575
+ 
+
+By using the following MDX query, the desired results can be achieved. The calculated measure, [Average Units Ordered], supplies the average number of ordered units per store by using the Avg, CurrentMember, and Descendants MDX functions. 
+
+Code Example 23.15 
+
+WITH
+MEMBER 
+Measures.[Average Units Ordered] 
+AS
+'AVG(DESCENDANTS([Store].CURRENTMEMBER, [Store].[Store Name]), [Measures].[Units 
+Ordered])'
+SELECT
+{[Measures].[Units ordered], Measures.[Average Units Ordered]} 
+ON COLUMNS,
+[Store].[Store State].MEMBERS
+ON ROWS
+FROM
+Warehouse
+
+This calculated measure is more powerful than it seems; if, for example, you then want to see the average number of units ordered for beer products in all of the stores in the California area, the following MDX query can be executed with the same calculated measure. 
+
+Code Example 23.16 
+
+WITH
+MEMBER 
+Measures.[Average Units Ordered] 
+AS
+'AVG(DESCENDANTS([Store].CURRENTMEMBER, [Store].[Store Name]), [Measures].[Units 
+Ordered])'
+SELECT
+{[Measures].[Units ordered], Measures.[Average Units Ordered]} 
+ON COLUMNS,
+[Product].[Beer].CHILDREN
+ON ROWS
+FROM
+Warehouse
+WHERE
+[Store].CA
+
+This MDX query, once executed, provides results similar to those in the following table. 
+
+ Units Ordered Average Units Ordered 
+Good
+  
+  
+ 
+Pearl
+ 151
+ 76
+ 
+Portsmouth
+ 95
+ 95
+ 
+Top Measure
+  
+  
+ 
+Walrus
+ 211
+ 106
+ 
+
+The same calculated measure could also be used, if the MDX query were narrowed to but a single store, to determine the average number of products ordered by that store. Using calculated measures in this manner can provide a great deal of information with relatively little effort in terms of MDX query formulation. 
+
+How Can I Use Different Calculations for Different Dimensions?
+Each measure in a cube uses the same aggregation function across all dimensions. However, there are times where a different aggregation function may be needed to represent a measure for reporting purposes. Two basic cases involve aggregating a single dimension using a different aggregation function than the one used for other dimensions. 
+
+• Aggregating minimums, maximums, or averages along a time dimension 
+ 
+• Aggregating opening and closing period values along a time dimension 
+ 
+
+The first case involves some knowledge of the behavior of the time dimension specified in the cube. For instance, to create a calculated measure that contains the average, along a time dimension, of measures aggregated as sums along other dimensions, the average of the aggregated measures must be taken over the set of averaging time periods, constructed through the use of the Descendants MDX function. Minimum and maximum values are more easily calculated through the use of the Min and Max MDX functions, also combined with the Descendants function. 
+
+For example, the Warehouse cube in the FoodMart 2000 database contains information on ordered and shipped inventory; from it, a report is requested to show the average number of units shipped, by product, to each store. Information on units shipped is added on a monthly basis, so the aggregated measure [Units Shipped] is divided by the count of descendants, at the Month level, of the current member in the Time dimension. This calculation provides a measure representing the average number of units shipped per month, as demonstrated in the following MDX query. 
+
+Code Example 23.17 
+
+WITH
+MEMBER
+[Measures].[Avg Units Shipped]
+AS
+'[Measures].[Units Shipped] / 
+COUNT(
+DESCENDANTS(
+[Time].CURRENTMEMBER,
+[Time].[Month],
+SELF
+)
+)'
+SELECT
+{Measures.[Units Shipped], Measures.[Avg Units Shipped]} 
+ON COLUMNS,
+NONEMPTYCROSSJOIN(
+Store.CA.Children, 
+Product.MEMBERS
+) 
+ON ROWS
+FROM
+Warehouse
+
+The NonEmptyCrossjoin MDX function is used to remove stores and products without values, significantly improving the performance of the query. 
+
+The second case is easier to resolve, because MDX provides the OpeningPeriod and ClosingPeriod MDX functions specifically to support opening and closing period values. 
+
+For example, the Warehouse cube in the FoodMart 2000 database contains information on ordered and shipped inventory; from it, a report is requested to show on-hand inventory at the end of every month. Because the inventory on hand should equal ordered inventory minus shipped inventory, the ClosingPeriod MDX function can be used to create a calculated measure to supply the value of inventory on hand, as demonstrated in the following MDX query. 
+
+Code Example 23.18 
+
+WITH
+MEMBER
+Measures.[Closing Balance]
+AS
+'(
+[Measures].[Units Ordered], 
+CLOSINGPERIOD(
+[Time].[Month], 
+[Time].CURRENTMEMBER
+)
+) – 
+(
+[Measures].[Units Shipped], 
+CLOSINGPERIOD(
+[Time].[Month], 
+[Time].CURRENTMEMBER
+)
+)'
+SELECT
+{[Measures].[Closing Balance]} ON COLUMNS,
+Product.MEMBERS ON ROWS
+FROM
+Warehouse
+
+Top of page
+Date and Time Questions 
+
+
+Date and time business questions tend to fall into two groups in MDX. The first group involves the use of the various period MDX functions to compare and contrast information across periods. The second group involves the use of both MDX and external functions to establish absolute date and time information for a variety of purposes. Both groups involve both navigation and manipulation MDX functions, and this section contains the most commonly asked questions from both groups. 
+
+How Can I Use Date Ranges in MDX?
+Date ranges are a frequently encountered problem. Business questions use ranges of dates, but OLAP objects provide aggregated information in date levels. 
+
+Using the technique described here, you can establish date ranges in MDX queries at the level of granularity provided by a time dimension. Date ranges cannot be established below the granularity of the dimension without additional information. For example, if the lowest level of a time dimension represents months, you will not be able to establish a two-week date range without other information. Member properties can be added to supply specific dates for members; using such member properties, you can take advantage of the date and time functions provided by VBA and Excel external function libraries to establish date ranges. 
+
+The easiest way to specify a static date range is by using the colon (:) operator. This operator creates a naturally ordered set, using the members specified on either side of the operator as the endpoints for the ordered set. For example, to specify the first six months of 1998 from the Time dimension in FoodMart 2000, the MDX syntax would resemble: 
+
+[Time].[1998].[1]:[Time].[1998].[6]
+
+For example, the Sales cube uses a time dimension that supports Year, Quarter, and Month levels. To add a six-month and nine-month total, two calculated members are created in the following MDX query. 
+
+Code Example 23.19 
+
+WITH
+MEMBER
+[Time].[1997].[Six Month] 
+AS
+'SUM([Time].[1]:[Time].[6])'
+MEMBER
+[Time].[1997].[Nine Month]
+AS
+'SUM([Time].[1]:[Time].[9])'
+SELECT
+AddCalculatedMembers([Time].[1997].Children)
+ON COLUMNS,
+[Product].Children
+ON ROWS
+FROM
+Sales
+
+This is by far the easiest way to supply static date ranges for MDX queries. There are many other methods, such as using member properties for better granularity, but this is the simplest method of handling static date ranges. 
+
+Handling rolling date ranges can be much more complex, and involve the use of external function libraries to supply date information. For more information on handling rolling date ranges, see "How Can I Use Rolling Date Ranges in MDX?" in this chapter. 
+
+How Can I Use Rolling Date Ranges in MDX?
+There are several techniques that can be used in MDX to support rolling date ranges. All of these techniques tend to fall into two groups. The first group involves the use of relative hierarchical functions to construct named sets or calculated members, and the second group involves the use of absolute date functions from external function libraries to construct named sets or calculated members. Both groups are applicable in different business scenarios. 
+
+In the first group of techniques, typically a named set is constructed which contains a number of periods from a time dimension. For example, the following table illustrates a 12-month rolling period, in which the figures for unit sales of the previous 12 months are shown. 
+
+ Unit Sales 
+1
+ 21,628.00
+ 
+2
+ 20,957.00
+ 
+...
+ ...
+ 
+11
+ 25,270.00
+ 
+12
+ 26,796.00
+ 
+
+The following MDX query accomplishes this by using a number of MDX functions, including LastPeriods, Tail, Filter, Members, and Item, to construct a named set containing only those members across all other dimensions that share data with the time dimension at the Month level. The example assumes that there is at least one measure, such as [Unit Sales], with a value greater than zero in the current period. The Filter function creates a set of months with unit sales greater than zero, while the Tail function returns the last month in this set, the current month. The LastPeriods function, finally, is then used to retrieve the last 12 periods at this level, including the current period. 
+
+Code Example 23.20 
+
+WITH
+SET
+Rolling12
+AS
+'LASTPERIODS(
+12, 
+TAIL(
+FILTER(
+[Time].[Month].MEMBERS, 
+([Customers].[All Customers], 
+[Education Level].[All Education Level],
+[Gender].[All Gender],
+[Marital Status].[All Marital Status],
+[Product].[All Products], 
+[Promotion Media].[All Media],
+[Promotions].[All Promotions],
+[Store].[All Stores],
+[Store Size in SQFT].[All Store Size in SQFT],
+[Store Type].[All Store Type],
+[Yearly Income].[All Yearly Income],
+Measures.[Unit Sales])
+>0),
+1).ITEM(0).ITEM(0)
+)'
+SELECT
+{[Measures].[Unit Sales]} 
+ON COLUMNS, 
+Rolling12 
+ON ROWS
+FROM
+Sales
+
+To ensure proper calculation, the [All] levels of every dimension in the cube are added to the set—if those dimensions are not explicitly mentioned, the CurrentMember function is used. 
+
+MDX also supports the use of external function libraries, and already provides the functions supported in the VBA and Excel function libraries for your use. Creating a rolling date range is more difficult than creating a static date range, and using external VBA functions makes the task easier to manage. Unlike static date ranges, which can dictate the starting and ending points explicitly within the query, the starting and ending points of a rolling date range must be determined dynamically. While MDX supports a number of period-related functions for you to use, all of them have one thing in common—they need an explicit frame of reference. If no frame of reference, in the form of a member or set expression, is provided, time period functions in MDX also use the CurrentMember function to provide an explicit frame of reference. 
+
+How Can I Use Different Calculations for Different Time Periods?
+A few techniques can be used, depending on the structure of the cube being queried, to support different calculations for members depending on the time period. The following example includes the MDX IIf function, and is easy to use but difficult to maintain. This example works well for ad hoc queries, but is not the ideal technique for client applications in a production environment. 
+
+For example, the following table illustrates a standard and dynamic forecast of warehouse sales, from the Warehouse cube in the FoodMart 2000 database, for drink products. The standard forecast is double the warehouse sales of the previous year, while the dynamic forecast varies from month to month—the forecast for January is 120 percent of previous sales, while the forecast for July is 260 percent of previous sales. 
+
+ 1 2 3 ... 
+Drink
+ 881.85
+ 579.05
+ 476.29
+ ...
+ 
+Food
+ 8,383.45
+ 4,851.41
+ 5,353.19
+ ...
+ 
+Non-Consumable
+ 2,040.40
+ 1,269.82
+ 1,460.69
+ ...
+ 
+Drink Forecast - Standard
+ 1,763.69
+ 1,158.10
+ 952.58
+ ...
+ 
+Drink Forecast - Dynamic
+ 1,058.22
+ 752.77
+ 666.81
+ ...
+ 
+
+The most flexible way of handling this type of report is the use of nested MDX IIf functions to return a multiplier to be used on the members of the Products dimension, at the Drinks level. The following MDX query demonstrates this technique. 
+
+Code Example 23.21 
+
+WITH
+MEMBER 
+[Product].[Drink Forecast - Standard] 
+AS
+'[Product].[All Products].[Drink] * 2'
+MEMBER
+[Product].[Drink Forecast - Dynamic]
+AS 
+'[Product].[All Products].[Drink] * 
+IIF([Time].CurrentMember.Name = "1", 1.2,
+IIF([Time].CurrentMember.Name = "2", 1.3,
+IIF([Time].CurrentMember.Name = "3", 1.4,
+IIF([Time].CurrentMember.Name = "4", 1.6,
+IIF([Time].CurrentMember.Name = "5", 2.1,
+IIF([Time].CurrentMember.Name = "6", 2.4,
+IIF([Time].CurrentMember.Name = "7", 2.6,
+IIF([Time].CurrentMember.Name = "8", 2.3,
+IIF([Time].CurrentMember.Name = "9", 1.9,
+IIF([Time].CurrentMember.Name = "10", 1.5,
+IIF([Time].CurrentMember.Name = "11", 1.4,
+IIF([Time].CurrentMember.Name = "12", 1.2, 1.0)
+)
+)
+)
+)
+)
+)
+)
+)
+)
+)
+)'
+
+SELECT 
+DESCENDANTS(Time.[1997], [Month], SELF)
+ON COLUMNS, 
+{[Product].CHILDREN, [Drink Forecast - Standard], [Drink Forecast - Dynamic]} 
+ON ROWS
+FROM
+Warehouse
+
+This technique allows the most flexibility for a user performing speculative analysis involving time series business questions; the multipliers can be changed within the query. The MDX query is not efficient, however, as it potentially needs to perform 12 nested functions to resolve the calculated member representing the dynamic forecast. 
+
+Other techniques, such as the addition of member properties to the Time or Product dimensions to support such calculations, are not as flexible but are much more efficient. The primary drawback to using such techniques is that the calculations are not easily altered for speculative analysis purposes. For client applications, however, where the calculations are static or slowly changing, using a member property is an excellent way of supplying such functionality to clients while keeping maintenance of calculation variables at the server level. The same MDX query, for example, could be rewritten to use a member property named [Dynamic Forecast Multiplier] as shown in the following MDX query. 
+
+Code Example 23.22 
+
+WITH
+MEMBER 
+[Product].[Drink Forecast - Standard] 
+AS
+'[Product].[All Products].[Drink] * 2'
+MEMBER
+[Product].[Drink Forecast - Dynamic]
+AS 
+'[Product].[All Products].[Drink] * 
+[Time].CURRENTMEMBER.PROPERTIES("Dynamic Forecast Multiplier")'
+
+SELECT 
+DESCENDANTS(Time.[1997], [Month], SELF)
+ON COLUMNS, 
+{[Product].CHILDREN, [Drink Forecast - Standard], [Drink Forecast - Dynamic]} 
+ON ROWS
+FROM
+Warehouse
+
+How Can I Compare Time Periods in MDX?
+To answer such a common business question, MDX provides a number of functions specifically designed to navigate and aggregate information across time periods. For example, year-to-date (YTD) totals are directly supported through the YTD function in MDX. In combination with the MDX ParallelPeriod function, you can create calculated members to support direct comparison of totals across time periods. 
+
+For example, the following table represents a comparison of YTD unit sales between 1997 and 1998, run against the Sales cube in the FoodMart 2000 database. 
+
+ 1998 
+YTD Unit Sales
+ 0
+ 
+Previous YTD Unit Sales
+ 266,773.00
+ 
+YTD Growth
+ -266,773.00
+ 
+
+The following MDX query uses three calculated members to illustrate how to use the YTD and ParallelPeriod functions in combination to compare time periods. 
+
+Code Example 23.23 
+---------------------------------------
+WITH MEMBER Measures.[YTD Store Sales] 
+   AS 
+   'SUM(YTD(),[Measures].[Store 
+      Sales])'
+SELECT 
+   {[YTD Store Sales]} ON COLUMNS,
+   Time.Month.MEMBERS ON ROWS
+FROM Sales
+------------------------------------
+
+
+
+
+WITH
+MEMBER
+[Measures].[YTD Unit Sales]
+AS
+'COALESCEEMPTY(
+SUM(
+YTD(),
+[Measures].[Unit Sales]
+), 0
+)'
+MEMBER [Measures].[Previous YTD Unit Sales]
+AS
+'(Measures.[YTD Unit Sales], PARALLELPERIOD([Time].[Year]))'
+MEMBER
+[Measures].[YTD Growth]
+AS
+'[Measures].[YTD Unit Sales] - ([Measures].[Previous YTD Unit Sales])'
+SELECT
+{[Time].[1998]} 
+ON COLUMNS,
+{[Measures].[YTD Unit Sales], 
+[Measures].[Previous YTD Unit Sales], 
+[Measures].[YTD Growth]} 
+ON ROWS
+FROM
+Sales 
+
+The current year is established by the use of the [Time].[1998] member in the Columns axis. The first calculated member uses the YTD function to provide the unit sales for the current year-to-date period and also uses the CoalesceEmpty function to set empty cells equal to zero for display purposes. The second calculated member uses the first calculated member to create the same totals for the previous year-to-date period, obtained by using the ParallelPeriod function to obtain the member representing the previous year. The third calculated member subtracts the second calculated member from the first calculated member, deriving the absolute YTD growth in unit sales between the current and previous years. 
+
+---------------------------------------------------------------------------------
+
+
+WITH
+MEMBER
+[Time].[1997].[Six Month] 
+AS
+'SUM([Time].[1]:[Time].[6])'
+MEMBER
+[Time].[1997].[Nine Month]
+AS
+'SUM([Time].[1]:[Time].[9])'
+MEMBER
+[Product].[Totals]
+AS
+'SUM([Product].[All Products].[Drink]:[Product].[All Products].[Non-Consumable])'
+
+SELECT
+{[Time].[1997].Children,[Time].[1997].[Six Month] ,[Time].[1997].[Nine Month]}
+ON COLUMNS,
+{[Product].Children,[Product].[Totals] }
+ON ROWS
+FROM
+Sales
+where [Measures].[Unit Sales]
+
+----------------------------------------------------------------------------------
+Top Customers --------------------------------------------------------------------
+
+ WITH 
+SET [Top6Customers] AS 'TOPCOUNT([Customers].[Name].MEMBERS, 6, [Measures].[Unit Sales])' 
+MEMBER [Customers].[Others] AS '([Customers].[All Customers], [Measures].[Unit Sales]) - SUM([Top6Customers], [Measures].[Unit Sales])'
+ SELECT {[Measures].[Unit Sales]} ON COLUMNS,
+     {[Top6Customers], [Customers].[Others]} ON ROWS
+ FROM [Sales] 
+
+------------------------------------------------------------------------------------
+Bottom Count -----------------------------------------------------------------------
+
+ WITH 
+SET [Bottom6Customers] AS 'BOTTOMCOUNT([Customers].[Name].MEMBERS, 6, [Measures].[Unit Sales])' 
+MEMBER [Customers].[Others] AS '([Customers].[All Customers], [Measures].[Unit Sales]) - SUM([Bottom6Customers], [Measures].[Unit Sales])'
+ SELECT {[Measures].[Unit Sales]} ON COLUMNS,
+     {[Bottom6Customers], [Customers].[Others]} ON ROWS
+ FROM [Sales]
+
+--------------------------------------------------------------------------------------
+
+WITH MEMBER [Measures].[Sales Last Month] AS
+   '([Time].CURRENTMEMBER.LAG(1), 
+      [Store Sales])'
+SELECT
+   {[Store Sales], [Sales Last Month]} ON COLUMNS,
+   Time.Month.MEMBERS ON ROWS
+FROM Sales
+
+---------------------------------------------------------------------------------------
+TOP COUNT WITH CROSSJOIN ANd WITH DESCENDANTS FUNCTIONS -------------------------------
+
+
+SELECT
+non empty {{ DESCENDANTS({[Time].[1997]:[Time].[1997]} ,[Time].[Quarter], SELF ) }*{TOPCOUNT({[Product].[Product Category].MEMBERS},10, [Measures].[Unit Sales])}}
+ON COLUMNS,
+non empty {[Customers].[City].MEMBERS} ON ROWS
+FROM [Sales]
+
+-----------------------------------------------------------------------------------------
+
+
+
+SELECT 
+non empty {{DESCENDANTS([Time].[1997],[Quarter],SELF_AND_BEFORE )}*{DESCENDANTS([Product].[Product Family].Members,[Product Family],SELF_AND_BEFORE)}} ON COLUMNS,
+non empty { [Customers].[All Customers],[Customers].[All Customers].[USA]} ON ROWS
+FROM SALES
+WHERE ([Measures].[Unit Sales]
+
+
+--------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------
+Sales per square foot calculations ---------------------------------------------------------
+--------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------
+
+
+WITH 
+
+    MEMBER  Measures.[Sq Ft] AS 
+
+    ' IIF ( Isleaf(Store.CurrentMember), 
+
+       StrToValue( Store.CurrentMember.Properties("Store Sqft")), 
+       SUM(Descendants(Store.CurrentMember, , Leaves),   
+             [Sq Ft])   )   '
+
+    MEMBER Measures.[Sales/SqFt] AS   
+    ' [Store Sales] / [Sq Ft] '
+
+SELECT 
+
+    {[Store Sales], [Sq Ft], [Sales/SqFt]} ON COLUMNS, 
+
+    [Store Name].Members ON ROWS 
+
+FROM Sales
+
+
+----------------------------------------------------------------------------------------------
+Modified Version of the Above ----------------------------------------------------------------
+----------------------------------------------------------------------------------------------
+
+WITH 
+
+    MEMBER  Measures.[Sq Ft] AS 
+
+    ' IIF ( Isleaf(Store.CurrentMember), 
+
+       StrToValue( Store.CurrentMember.Properties("Store Sqft")), 
+       SUM(Descendants(Store.CurrentMember, , Leaves),   
+             [Sq Ft])   )   '
+
+    MEMBER Measures.[Sales/SqFt] AS   
+  ' IIF([Sq Ft] = 0, NULL,IIF([Store Sales] = 0, NULL, [Store Sales] / [Sq Ft]))'
+
+
+
+SELECT 
+
+    non empty {{[Store Sales]},{ [Sq Ft], [Sales/SqFt]}} ON COLUMNS, 
+
+   non empty {[Store Name].Members} ON ROWS 
+
+FROM Sales
+
+-------------------------------------------------------------------------------------------------
+Uneven level along the axis with DESCENDANTS and a CROSSJOIN ------------------------------------
+-------------------------------------------------------------------------------------------------
+
+
+SELECT 
+non empty 
+{{([Time].[1997]),([Time].[1997].[Q1]:[Time].[1997].[Q3]),([Time].[1997].[Q4].[10]:[Time].[1997].[Q4].[12])}*
+{DESCENDANTS([Product].[Product Family].Members,[Product Family],SELF_AND_BEFORE),([Product].[All Products]), 
+([Product].[All Products].[Non-Consumable].[Carousel].[Specialty].[Sunglasses])}}
+ON COLUMNS,
+non empty {DESCENDANTS([Customers].[State Province].Members, [Customers].[City] ,SELF_AND_BEFORE )} ON ROWS
+FROM SALES
+WHERE ([Measures].[Unit Sales])
+
+
+
+
+---------------------------------------------------------------------------------------------------
+
+Ranking Example:
+
+-----------------
+
+WITH
+
+MEMBER [Measures].[YTD Units Count] AS
+'SUM(YTD(),[Measures].[Unit Sales])'
+
+
+SET [This Year Top 10 Customers] AS
+'Order(TopCount ([Customers].[Name].Members,10,[Measures].[YTD Units Count]),[Measures].[Unit Sales],BDESC)'
+
+MEMBER [Measures].[This Year Rank] AS
+'Rank ([Customers].CurrentMember,[This Year Top 10 Customers])'
+
+SELECT 
+{ [Measures].[This Year Rank],[Measures].[YTD Units Count]} on Columns,
+{[This Year Top 10 Customers]} on Rows
+FROM Sales
+
+-----------------------------------------------------------------------------------------------------------
+
+Example of Use of Generate Function to break apart natural ordering with skiping a level in the dimension :
+
+
+WITH
+SET [Stores we need] AS 
+' Generate (
+{[Store].[Store State].Members},
+{[Store].CurrentMember,
+  Order({ Descendants( [Store].CurrentMember, [Store].[Store Name], SELF) } , [Measures].[Profit],BDESC ) } )'
+
+SELECT NON EMPTY
+{[Measures].[Unit Sales],[Measures].[Store Sales],[Measures].[Profit]} 
+on Columns,
+NON EMPTY { [Stores we need]} 
+on Rows
+FROM Sales
+
+---------------------------------------------------------------------------------------------------------------
+
+Use of Complex CrossJoins in the Syntax using the *
+
+-----------------------------------------------------
+
+
+SELECT
+non empty 
+{
+
+{[Promotions].[Promotion Name].Members}*{[Measures].[Unit Sales],[Measures].[Store Cost]}  
+
+}
+on columns,
+
+
+non empty 
+
+{ 
+
+{{[Time].[Year].Members}*{[Gender].[Gender].Members}*{[Product].[Product Family].Members}},
+{{[Time].[Year].Members}*{[Gender].[Gender].Members}*{[Product].[Product Category].[Snack Foods].Children}}
+
+}
+on Rows
+FROM Sales
+
+----------------------------------------------------------------------------------------------------------------------
+
+Example of a TopCount of Cusomers and then The TopCount of their products as far as profit is concerned
+--- so in essence this is a TopCount of a TopCount -------------------------------------------------------------------
+
+
+WITH
+SET [Top10Cust] AS
+'{TopCount([Customers].[Name].Members,10,[Measures].[Profit])}'
+
+SET [Top3Prod] AS
+'{TopCount([Product].[Brand Name].Members,3,[Measures].[Profit])}'
+
+SET [Top3ProdOf10Cust] AS
+'{Generate([Top10Cust], TopCount([Product].[Brand Name].Members,3,[Measures].[Profit]))}'
+
+SELECT
+non empty {[Time].[Quarter].Members} on columns,
+non empty 
+{[Top3ProdOf10Cust]}
+ on Rows
+FROM Sales
+
+
+-----------------------------------------------------------------------------------------------------------------------
+
+Example of Another Variation on the TopCount and TopPercent Idea :
+-------------------------------------------------------------------
+
+
+WITH
+SET [Top 10% of Cust] AS
+'TopPercent([Customers].[Name].Members,10,[Measures].[Profit])'
+
+SET [Top 20% Prods of Top 10% Cust] AS
+'Generate([Top 10% of Cust], {[Customers].CurrentMember}*{TopPercent([Product].[Brand Name].Members,20,[Measures].[Profit])})'
+
+SET [Top 10%'s Top 20% Products] AS
+'Extract([Top 20% Prods of Top 10% Cust],[Product])'
+
+SELECT
+{Descendants([Time].[1997],[Quarter],SELF)} on Columns,
+{    [Top 20% Prods of Top 10% Cust]   }
+On Rows
+FROM SALES
+
+------------------------------------------------------------------------------------------------------------------------
+
+GoodBets Example --- another example with the use of a Filter to narrow down selection
+
+
+WITH 
+MEMBER [Measures].[Margin Percent] AS
+'[Measures].[Store Sales]/( [Measures].[Store Sales]-[Measures].[Store Cost])', FORMAT_STRING = '#.00' 
+
+SET [GoodBets] AS
+'Filter([Customers].[City].Members, [Measures].[Margin Percent]>1.7)'
+
+SELECT non empty
+{
+
+{Descendants([Time].[1997],[Quarter],SELF)}*
+{[Measures].[Store Sales],[Measures].[Margin Percent] }
+
+}
+ on Columns, non empty
+{{[GoodBets]}*{[Product].[Product Category].Members}} on Rows
+FROM SALES
+
+------------------------------------------------------------------------------------------------------------------------
+
+
+Examples of Custom Rollup Definisions for a dimension:
+---------------------------------------------------------
+
+IIF(IsLeaf([Accounts].CurrentMember),
+	   [Accounts].Ignore,
+           RollupChildren([Accounts].CurrentMember,
+              Accounts.CurrentMember.Properties("UNARY_OPERATOR"))
+   )
+
+-----------------------------------------------------------------------------------------        
+Cumulative sums - another example - don't understand the numbers that well here.
+
+----------------------------------------------------------------------------------
+
+WITH 
+MEMBER [Measures].[Cum Employee Count] AS
+'Sum(
+          Head(
+                     Order( {[Store].Parent.Children},[Measures].[Number of Employees],BDESC),
+                     Rank([Store],Order( {[Store].Parent.Children},[Measures].[Number of Employees],BDESC) )
+                   ),
+               [Measures].[Number of Employees] )'
+
+
+SELECT 
+{[Measures].[Number of Employees], [Measures].[Cum Employee Count] } on columns,
+{ Descendants([Store].[Store State].[CA],  [Store City]) } on rows
+FROM HR
+
+
+-----------------------------------------------------------------------------------------
+
+Sorting on multiple criteria :
+
+---------------------------------
+
+WITH 
+MEMBER [Measures].[Sq_Feet] AS
+'Val([Store].CurrentMember.Properties("Store Sqft"))'
+
+MEMBER [Measures].[Sales Scale] AS
+'([Measures].[Store Sales],[Store].[All Stores])'
+
+SET [Selected Stores] AS
+'{Order({[Store].[Store Name].Members}, ([Measures].[Store Sales]*[Measures].[Sq_Feet])+ [Measures].[Sales Scale],BDESC)}'
+
+
+SELECT 
+{[Measures].[Unit Sales], [Measures].[Sq_Feet] } on columns,
+{ [Selected Stores]} 
+
+on rows
+from SALES
+
+----------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------
+
+
+Understanding the regional impact of sales efforts by each of the chains in  distribution
+
+---- or in essence we want changes in our sales growth projections per chain to be 
+     immidiately calculated over regions -----------------------------------------------
+
+Create Member [Planning].[Measures].[Projected Region Sales] AS
+'Sum (
+       Descendants (
+                    [Outlet].[ByRegion].CurrentMember,
+                    [Outlet].[ByRegion].[Store]
+                    ),
+       ValidMeasure ((
+                    [Measures].[Growth Factor],
+                    Ancestor (
+                              LinkMember (
+                                [Outlet].[ByRegion].CurrentMember,
+                                [Outlet].[ByChain]
+                              ),
+                      [Outlet].[ByChain].[Chain]
+                     )
+                  ))*
+
+               ([Measures].[Sales],
+                ParallelPeriod([Time].[Year],[Time].CurrentMember)
+         )
+ )'
+
+
+-----------
+|         |
+|         | 
+|         |   
+|----------
+
+----------------------------------------------------------------------------------------------
+Use of IIF in Calculated Member Definition - -------------------------------------------------
+----------------------------------------------------------------------------------------------
+
+WITH
+ MEMBER [Measures].[BudgetedExpenses] AS
+ 'IIF([Market].CurrentMember.[Major Market],
+  [Marketing] * 1.2, [Marketing])'
+SELECT
+ {[Measures].[BudgetedExpenses]} ON COLUMNS,
+  [Market].Members ON ROWS
+FROM Sample.Basic
+WHERE ([Budget])
+
+------------------------------------------------
+
+
+
+SUM(
+FILTER(
+DESCENDANTS(
+[Customer Ship To].[By Customer].CURRENTMEMBER, 
+[Customer Ship To].[Corporate Customer Group]
+), ([Measures].[% of Total Units] ) > 0 ))
+
+-------------------------------------------------
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Total Billing Days]
+AS
+Case
+ When [Calendar].[By Calendar].CurrentMember.Level.Ordinal <= 5 Then
+  Count(Except(Descendants([Calendar].[By Calendar].CurrentMember, [Calendar].[By Calendar].[Day]), 
+               Filter([Calendar].[By Calendar].[Day].Members, [Calendar].[By Calendar].CurrentMember.Properties("Business Holiday", TYPED) = true)
+              )
+        * {[Calendar].[Day of Week].&[2]:[Calendar].[Day of Week].&[6]} -- include weekdays only
+       )
+  -- Count(Descendants([Calendar].[By Calendar].CurrentMember, [Calendar].[By Calendar].[Week]), INCLUDEEMPTY) * 2
+End
+,
+FORMAT_STRING = "#", VISIBLE = 1, DISPLAY_FOLDER = 'Billing Days', ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Current Month Billing Day]
+AS
+iif([Customer Ship To].[By Customer].Level.Ordinal > 2,
+NULL,
+ Iif([Calendar].[By Calendar].CurrentMember = [Calendar].[By Calendar].DefaultMember,
+  Count(Except(PeriodsToDate([Calendar].[By Calendar].[Month], Tail(NonEmpty([Calendar].[By Calendar].[Day].Members), 1).Item(0)), 
+               Filter([Calendar].[By Calendar].[Day].Members, [Calendar].[By Calendar].CurrentMember.Properties("Business Holiday", TYPED) = true)
+              ) * {[Calendar].[Day of Week].&[2]:[Calendar].[Day of Week].&[6]} -- include weekdays only
+       ),
+ NULL)
+)
+,
+FORMAT_STRING = "#", VISIBLE = 1, DISPLAY_FOLDER = 'Billing Days', ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[% of Current Month Billing Day]
+AS
+ [Measures].[Current Month Billing Day] / [Measures].[Total Billing Days],
+FORMAT_STRING = "0%", VISIBLE = 1, DISPLAY_FOLDER = 'Billing Days', ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+/* End - Billing Day calculations */
+
+-----------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                 ERAE Calculations
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+Calculate;
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Total Backlog Units]
+ AS [Measures].[Current Backlog Units] + [Measures].[Next Backlog Units] + [Measures].[Future Backlog Units], 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Backlog';                                    
+/* Sales Plan calculations */
+CREATE MEMBER CURRENTCUBE.[Measures].[Plan]
+ AS 
+  IIF( [Customer Ship To].[By Customer].CurrentMember.Level.Ordinal = 0 AND [Customer Sold To].[By Customer].CurrentMember.Level.Ordinal = 0,
+   IIF( [Product].[By Product].CurrentMember.Level.Ordinal > [Measures].[Sales Plan Product Level],
+    NULL,
+    [Measures].[Sales Plan Amount] 
+   ),
+   NULL
+  ), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                                    
+                       
+CREATE MEMBER CURRENTCUBE.[Measures].[Month Plan]
+ AS 
+  IIF( [Calendar].[By Calendar].CurrentMember.Level.Ordinal = 4,
+   SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[Plan]),
+   NULL
+  ), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                                    
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Plan]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Year], [Calendar].[By Calendar]),[Measures].[PLAN]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                              
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Plan Units]
+ AS 
+  IIF( [Customer Ship To].[By Customer].CurrentMember.Level.Ordinal = 0 AND [Customer Sold To].[By Customer].CurrentMember.Level.Ordinal = 0,
+   IIF( [Product].[By Product].CurrentMember.Level.Ordinal > [Measures].[Sales Plan Product Level],
+    NULL,
+    [Measures].[Demand Units] 
+   ),
+   NULL
+  ), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                                    
+                       
+CREATE MEMBER CURRENTCUBE.[Measures].[Month Plan Units]
+ AS 
+  IIF( [Calendar].[By Calendar].CurrentMember.Level.Ordinal = 4,
+   SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[Plan Units]),
+   NULL
+  ), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                                    
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Plan Units]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Year], [Calendar].[By Calendar]),[Measures].[Plan Units]), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales Plan';                              
+/*
+CREATE MEMBER CURRENTCUBE.[Measures].[Plan Previous]
+ AS IIF( PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty((PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[plan])),
+NULL,
+([Calendar].[By Calendar], [Measures].[plan]) / (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[plan])), 
+FORMAT_STRING = "$#,##0;($#,##0)", 
+VISIBLE = 0;                      
+   
+CREATE MEMBER CURRENTCUBE.[Measures].[PlanPrevious1]
+ AS (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[plan]), 
+FORMAT_STRING = "Currency", 
+FORE_COLOR = IIF([Plan] > 1000000,255 /*Red*/,8388608 /*Navy*/), 
+VISIBLE = 0;                      
+*/
+
+/* 
+CREATE MEMBER CURRENTCUBE.[Measures].[Total Backlog Gross]
+ AS [Measures].[CURR BACKLOG GROSS] + [Measures].[NXT BACKLOG GROSS] + [Measures].[FTR BACKLOG GROSS], 
+FORMAT_STRING = "$#,##0;($#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Backlog';                                                    
+*/
+//
+/*Returns the aggregate of a numeric expression from the start of a specified period to the current period.*/
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Gross Sales]
+ AS Sum
+(
+  PeriodsToDate
+  (
+     [Calendar].[By Calendar].[Month],
+	 [Calendar].[By Calendar]
+  ),
+  [Measures].[Gross Sales]
+), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                     
+
+//
+/*Returns the aggregate of a numeric expression from the start of a specified period to the current period.*/
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Gross Sales]
+ AS Sum
+(
+  PeriodsToDate
+  (
+     [Calendar].[By Calendar].[Year],
+	 [Calendar].[By Calendar]
+  ),
+  [Measures].[Gross Sales]
+), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                  
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Gross Sales Prev Yr]
+ AS (ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]), [Measures].[YTD Gross Sales]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                           
+
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Net Sales]
+ AS Sum
+(
+  PeriodsToDate
+  (
+     [Calendar].[By Calendar].[Month],
+	 [Calendar].[By Calendar]
+  ),
+  [Measures].[NET SALES]
+), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                     
+
+//
+/*Returns the aggregate of a numeric expression from the start of a specified period to the current period.*/
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Net Sales]
+ AS Sum
+(
+  PeriodsToDate
+  (
+     [Calendar].[By Calendar].[Year],
+	 [Calendar].[By Calendar]
+  ),
+  [Measures].[NET SALES]
+), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                       
+                                    
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Net Sales Prev Yr]
+ AS (PARALLELPERIOD([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]), [Measures].[MTD NET SALES]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                           
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Net Sales Prev Yr]
+ AS (PARALLELPERIOD([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]), [Measures].[YTD NET SALES]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                           
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Avg Price]
+ AS IIF( IsEmpty(Units) OR Units=0 , Null, [NET SALES]/[UNITS]), 
+FORMAT_STRING = "$#,##0.00;($#,##0.00)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                    
+
+       
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Net Sales % of Prev Yr]
+ AS IIF( PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty((PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD NET SALES]))
+  OR (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD NET SALES]) = 0,
+NULL,
+([Calendar].[By Calendar], [Measures].[MTD NET SALES]) / (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD NET SALES])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                           
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Net Sales % of Prev Yr]
+ AS IIF( PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty((PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD NET SALES]))
+  OR (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD NET SALES]) = 0,
+NULL,
+([Calendar].[By Calendar], [Measures].[YTD NET SALES]) / (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD NET SALES])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                 
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Net Sales % of Plan]
+ AS IIF( ISEMPTY([Plan]) OR [Plan]=0 OR [Calendar].[By Calendar].CurrentMember.Level.Ordinal = 0, NULL, [Net Sales]/[Plan]),
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                         
+
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Net Sales % of Plan]
+ AS IIF( ISEMPTY([MONTH PLAN]) OR [MONTH PLAN]=0, NULL, [MTD NET SALES]/[MONTH PLAN]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                            
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Net Sales % of Plan]
+ AS IIF( ISEMPTY([YTD PLAN]) OR [YTD PLAN]=0,NULL,[YTD NET SALES]/[YTD PLAN]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .9 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';               
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Avg Price]
+ AS AVG(PeriodsToDate([Calendar].[By Calendar].[Year], [Calendar].[By Calendar]),[Measures].[Avg Price]), 
+FORMAT_STRING = "$#,##0.00;($#,##0.00)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';              
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Avg Price]
+ AS AVG(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[Avg Price]), 
+FORMAT_STRING = "$#,##0.00;($#,##0.00)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                 
+
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Units]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[UNITS]), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                           
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Units]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Year], [Calendar].[By Calendar]),[Measures].[UNITS]), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                           
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Units Prev Yr]
+ AS (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD UNITS]), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';              
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD Units % of Prev Yr]
+ AS IIF( PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty(([Calendar].[By Calendar], [Measures].[YTD Units Prev Yr]))
+  OR ([Calendar].[By Calendar], [Measures].[YTD Units Prev Yr]) = 0,
+NULL,
+([Calendar].[By Calendar], [Measures].[YTD Units]) / ([Calendar].[By Calendar], [Measures].[YTD Units Prev Yr])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';            
+
+
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Units % of Prev Yr]
+ AS IIF( PARALLELPERIOD([Calendar].[By Calendar].[Month],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty(([Calendar].[By Calendar], [Measures].[MTD Units Prev Yr]))
+  OR ([Calendar].[By Calendar], [Measures].[MTD Units Prev Yr]) = 0,
+NULL,
+([Calendar].[By Calendar], [Measures].[MTD Units]) / ([Calendar].[By Calendar], [Measures].[MTD Units Prev Yr])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';            
+ 
+
+                                                             
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD Units Prev Yr]
+ AS (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD UNITS]), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                          
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Net Sales % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year], 1, [Calendar].[By Calendar]) IS NULL
+     OR IsEmpty(
+                 (
+                   ParallelPeriod
+                   (
+                     [Calendar].[By Calendar].[Year],
+                     1,
+                     [Calendar].[By Calendar]
+                   ),
+                   [Measures].[NET SALES]
+                 )
+               ),
+    NULL,
+    (
+      [Calendar].[By Calendar], [Measures].[NET SALES]) / 
+      (
+        ParallelPeriod
+        (
+          [Calendar].[By Calendar].[Year],
+          1,
+          [Calendar].[By Calendar]
+        ),
+        [Measures].[NET SALES]
+      )
+    ), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                   
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est Net Sales]
+ AS IIF( [Measures].[Est Backlog Factor] <> 0,
+     [Measures].[Net Sales] + [Measures].[Est Backlog Factor], 
+     NULL
+    ),
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                  
+              
+CREATE MEMBER CURRENTCUBE.[Measures].[Est MTD Net Sales]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[Est Net Sales]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                   
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est YTD Net Sales]
+ AS IIF( [Calendar].[By Year].CurrentMember.Name = CStr(Year(Now())),
+     [Measures].[YTD Net Sales] + [Measures].[Est Backlog Factor],
+     NULL     
+    ), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales'  ;                                   
+/*
+Estimated Measures
+*/                                   
+CREATE MEMBER CURRENTCUBE.[Measures].[Est MTD Net Sales % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD Net Sales])),
+NULL,
+([Calendar].[By Calendar], [Measures].[Est MTD Net Sales]) / (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[MTD Net Sales])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                            
+CREATE MEMBER CURRENTCUBE.[Measures].[Est YTD Net Sales % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+  OR isempty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales]))
+  OR (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales]) = 0,
+NULL,
+([Calendar].[By Calendar], [Measures].[Est YTD Net Sales]) / (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales])), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                 
+CREATE MEMBER CURRENTCUBE.[Measures].[Est MTD Net Sales % of Plan]
+ AS IIF( ISEMPTY([MONTH PLAN]) OR [MONTH PLAN]=0, NULL, [EST MTD NET SALES]/[MONTH PLAN]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .8 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                            
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est YTD Net Sales % of Plan]
+ AS IIF( ISEMPTY([YTD PLAN]) OR [YTD PLAN]=0,NULL,[EST YTD NET SALES]/[YTD PLAN]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+FORE_COLOR = IIF( [Measures].CurrentMember < .9 , 255 /*Red*/, 0 /*Black*/), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                                                
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est Units]
+ AS IIF( [Measures].[Est Backlog Factor Units] <> 0,
+     [Measures].[Units] + [Measures].[Est Backlog Factor Units], 
+     NULL
+    ), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                  
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est MTD Units]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[Est Units]),
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                   
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Est YTD Units]
+ AS IIF( [Calendar].[By Year].CurrentMember.Name = CStr(Year(Now())),
+     [Measures].[YTD Units] + [Measures].[Est Backlog Factor Units],
+     NULL     
+    ), 
+FORMAT_STRING = "#,##0;(#,##0)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Estimated Net Sales - Units' ,  ASSOCIATED_MEASURE_GROUP = 'Sales'  ;              
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Last Sales Time]
+ AS IIF([MaxERAEOperTimeSales] IS NULL,
+ NULL, 
+left([MaxERAEOperTimeSales],4)+"-"+mid([MaxERAEOperTimeSales],5,2)+"-"+mid([MaxERAEOperTimeSales],7,2)+" "+iif(mid([MaxERAEOperTimeSales],9,2)>"12",mid([MaxERAEOperTimeSales],9,2)-"12",mid([MaxERAEOperTimeSales],9,2))+":"+mid([MaxERAEOperTimeSales],11,2)+":"+mid([MaxERAEOperTimeSales],13,2)+" "+iif(right([MaxERAEOperTimeSales],1)=1,"PM","AM")), 
+VISIBLE = 0 ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                    
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Last Backlog Time]
+ AS IIF([MaxERAEOperTimeBacklog] IS NULL,
+ NULL, 
+left([MaxERAEOperTimeBacklog],4)+"-"+mid([MaxERAEOperTimeBacklog],5,2)+"-"+mid([MaxERAEOperTimeBacklog],7,2)+" "+iif(val(mid([MaxERAEOperTimeBacklog],9,2))>12,(mid([MaxERAEOperTimeBacklog],9,2)-"12"),mid([MaxERAEOperTimeBacklog],9,2))+":"+mid([MaxERAEOperTimeBacklog],11,2)+":"+mid([MaxERAEOperTimeBacklog],13,2)+" "+iif(right([MaxERAEOperTimeBacklog],1)=1,"PM","AM")), 
+VISIBLE = 0 ,  ASSOCIATED_MEASURE_GROUP = 'Backlog';                                              
+
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD DP@STD]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[DP@STD]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                               
+
+/*
+Begin - Delivered Profit Measures - Tulga Unlusoy 7/25/2009
+*/
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STD]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Year], [Calendar].[By Calendar] ),[Measures].[DP@STD]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD DP@STLF]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Month], [Calendar].[By Calendar]),[Measures].[DP@STLF]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF]
+ AS SUM(PeriodsToDate([Calendar].[By Calendar].[Year],[Calendar].[By Calendar]) ,[Measures].[DP@STLF]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STD Prev Yr]
+ AS (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD DP@STD]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF Prev Yr]
+ AS (PARALLELPERIOD([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD DP@STLF]), 
+FORMAT_STRING = "$#,###,;($#,###,)", 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD DP@STD % of Net Sales]
+ AS IIF( ISEMPTY([MTD Net Sales]) OR [MTD Net Sales]=0,NULL,[MTD DP@STD]/[MTD Net Sales]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+CREATE MEMBER CURRENTCUBE.[Measures].[MTD DP@STLF % of Net Sales]
+ AS IIF( ISEMPTY([MTD Net Sales]) OR [MTD Net Sales]=0,NULL,[MTD DP@STLF]/[MTD Net Sales]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STD % of Net Sales]
+ AS IIF( ISEMPTY([YTD Net Sales]) OR [YTD Net Sales]=0,NULL,[YTD DP@STD]/[YTD Net Sales]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF % of Net Sales]
+ AS IIF( ISEMPTY([YTD Net Sales]) OR [YTD Net Sales]=0,NULL,[YTD DP@STLF]/[YTD Net Sales]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                                             
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF % of YTD Net Sales]
+ AS IIF( ISEMPTY([YTD Net Sales]) OR [YTD Net Sales]=0,NULL,[YTD DP@STLF]/[YTD Net Sales]), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                         
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF % of Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+ OR IsEmpty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD DP@STLF]))
+ OR (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD DP@STLF]) = 0,
+ NULL,
+ ([Calendar].[By Calendar], [Measures].[YTD DP@STLF]) /
+ (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD DP@STLF])
+), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                         
+
+CREATE MEMBER CURRENTCUBE.[Measures].[YTD DP@STLF % of Net Sales Prev Yr]
+ AS IIF( ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]) IS NULL
+ OR IsEmpty((ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales]))
+ OR (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales]) = 0,
+ NULL,
+ ([Calendar].[By Calendar], [Measures].[YTD DP@STLF Prev Yr]) /
+ (ParallelPeriod([Calendar].[By Calendar].[Year],1,[Calendar].[By Calendar]), [Measures].[YTD Net Sales])
+), 
+FORMAT_STRING = IIF([Measures].CurrentMember.Value > 5, "\>\5\0\0\%",
+                    IIF([Measures].CurrentMember.Value < -5, ";\<\5\0\0\%", "Percent")), 
+VISIBLE = 1 ,  DISPLAY_FOLDER = 'Margin' ,  ASSOCIATED_MEASURE_GROUP = 'Sales';                        
+/*
+End - Delivered Profit Measures
+*/
+
+/* Begin - Billing Day calculations - Tulga Unlusoy 10/18/2010 */
+CREATE MEMBER CURRENTCUBE.[Measures].[Total Billing Days]
+AS
+Case
+ When [Calendar].[By Calendar].CurrentMember.Level.Ordinal <= 5 Then
+  Count(Except(Descendants([Calendar].[By Calendar].CurrentMember, [Calendar].[By Calendar].[Day]), 
+               Filter([Calendar].[By Calendar].[Day].Members, [Calendar].[By Calendar].CurrentMember.Properties("Business Holiday", TYPED) = true)
+              )
+        * {[Calendar].[Day of Week].&[2]:[Calendar].[Day of Week].&[6]} -- include weekdays only
+       )
+  -- Count(Descendants([Calendar].[By Calendar].CurrentMember, [Calendar].[By Calendar].[Week]), INCLUDEEMPTY) * 2
+End
+,
+FORMAT_STRING = "#", VISIBLE = 1, DISPLAY_FOLDER = 'Billing Days', ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[Current Month Billing Day]
+AS
+iif([Customer Ship To].[By Customer].Level.Ordinal > 2,
+NULL,
+ Iif([Calendar].[By Calendar].CurrentMember = [Calendar].[By Calendar].DefaultMember,
+  Count(Except(PeriodsToDate([Calendar].[By Calendar].[Month], Tail(NonEmpty([Calendar].[By Calendar].[Day].Members), 1).Item(0)), 
+               Filter([Calendar].[By Calendar].[Day].Members, [Calendar].[By Calendar].CurrentMember.Properties("Business Holiday", TYPED) = true)
+              ) * {[Calendar].[Day of Week].&[2]:[Calendar].[Day of Week].&[6]} -- include weekdays only
+       ),
+ NULL)
+)
+,
+FORMAT_STRING = "#", VISIBLE = 1, DISPLAY_FOLDER = 'Billing Days', ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+CREATE MEMBER CURRENTCUBE.[Measures].[% of Current Month Billing Day]
+AS
+ [Measures].[Current Month Billing Day] / [Measures].[Total Billing Days],
+FORMAT_STRING = "0%", VISIBLE = 1, DISPLAY_FOLDER = 'Billing Days', ASSOCIATED_MEASURE_GROUP = 'Sales';
+
+/* End - Billing Day calculations */
+
+
+/* Default settings should be placed at the bottom of the script */
+/* Sets the default month to last month with data (nonempty) */
+/*
+ALTER CUBE SALES
+UPDATE DIMENSION [Measures],
+DEFAULT_MEMBER = [Curr Backlog Gross];                                   
+ALTER CUBE SALES
+UPDATE DIMENSION [Calendar].[By Calendar],
+DEFAULT_MEMBER = Tail(NonEmpty([Calendar].[By Calendar].[Month].Members),1).Item(0);
+*/
+//[Calendar].[By Calendar].[Month].[Sep, 2010];
+//Tail(Nonempty([Calendar].[By Calendar].[Month].members),1).Item(0);   
+
+//
+//IIF([Calendar].[By Calendar].[Month].CurrentMember IS [Calendar].[By Calendar].[Month].DefaultMember ,
+//     [Measures].[YTD Net Sales] + [Measures].[Est Backlog Factor], 
+//     NULL
+//    )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

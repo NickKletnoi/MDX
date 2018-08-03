@@ -1,0 +1,52 @@
+
+
+
+
+
+/* Used a VB fucntion which works in SSAS  also */ 
+Case 
+/* Cheking for Current Memeber Level */
+When [DATE].[Fiscal Calendar].CurrentMember.Level is [DATE].[Fiscal Calendar].[Month] 
+Then 
+Case
+/* Cheking for Current Memeber is Latest Month using Now function */
+When [DATE].[Month].MemberValue=Ancestor(StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Calendar].[Month]).MemberValue
+Then Aggregate(PeriodsToDate([DATE].[Fiscal Calendar].[Month],StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(vba!dateadd('m',-1,NOW()),'yyyy-MM-dd'))+"T00:00:00]")),[Measures].[Net Order Amt])
+/* If month is less than Current Month Then ParallelPriod */
+/* Repeated same for Quarter, Half and Year */
+When [DATE].[Month].MemberValue<Ancestor(StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Calendar].[Month]).MemberValue
+Then (ParallelPeriod([DATE].[Fiscal Calendar].CurrentMember.Level, 1, [DATE].[Fiscal Calendar]),[Measures].[Order $K])
+Else Null
+End
+When [DATE].[Fiscal Calendar].CurrentMember.Level is [DATE].[Fiscal Calendar].[Fiscal Quarter] 
+Then
+Case 
+When [DATE].[Fiscal Quarter].MemberValue=Ancestor(StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Calendar].[Fiscal Quarter]).MemberValue
+Then Aggregate(PeriodsToDate([DATE].[Fiscal Calendar].[Fiscal Quarter],StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(vba!dateadd('q',-1,NOW()),'yyyy-MM-dd'))+"T00:00:00]")),[Measures].[Net Order Amt])
+When [DATE].[Fiscal Quarter].MemberValue<Ancestor(StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Calendar].[Fiscal Quarter]).MemberValue
+Then (ParallelPeriod([DATE].[Fiscal Calendar].CurrentMember.Level, 1, [DATE].[Fiscal Calendar]),[Measures].[Order $K])
+Else Null
+End
+When [DATE].[Fiscal Calendar].CurrentMember.Level is [DATE].[Fiscal Calendar].[Fiscal Half]
+Then 
+Case 
+When [DATE].[Fiscal Half].MemberValue=Ancestor(StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Calendar].[Fiscal Half]).MemberValue
+Then Aggregate(PeriodsToDate([DATE].[Fiscal Calendar].[Fiscal Half],StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(vba!dateadd('q',-2,NOW()),'yyyy-MM-dd'))+"T00:00:00]")),[Measures].[Net Order Amt])
+When [DATE].[Fiscal Half].MemberValue<Ancestor(StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Calendar].[Fiscal Half]).MemberValue
+Then (ParallelPeriod([DATE].[Fiscal Calendar].CurrentMember.Level, 1, [DATE].[Fiscal Calendar]),[Measures].[Order $K])
+Else Null
+End
+When [DATE].[Fiscal Calendar].CurrentMember.Level is [DATE].[Fiscal Calendar].[Fiscal Year]
+Then
+Case 
+When [DATE].[Fiscal Year].MemberValue=Ancestor(StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Calendar].[Fiscal Year]).MemberValue
+Then Aggregate(PeriodsToDate([DATE].[Fiscal Calendar].[Fiscal Year],StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(vba!dateadd('yyyy',-1,NOW()),'yyyy-MM-dd'))+"T00:00:00]")),[Measures].[Net Order Amt])
+When [DATE].[Fiscal Year].MemberValue<Ancestor(StrToMember("[DATE].[Fiscal Calendar].[Date].&["+CStr(FORMAT(NOW(),'yyyy-MM-dd'))+"T00:00:00]"),[DATE].[Fiscal Calendar].[Fiscal Year]).MemberValue
+Then (ParallelPeriod([DATE].[Fiscal Calendar].CurrentMember.Level, 1, [DATE].[Fiscal Calendar]),[Measures].[Order $K])
+Else Null
+End
+Else Null
+End
+
+
+

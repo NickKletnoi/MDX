@@ -1,0 +1,141 @@
+/*
+Name:     RCAL033:  ASN Accuracy Rate ($)
+Created:  9/15/2005, Nick Kletnoi
+
+History:
+(1) RDR, 10/25/2005.  Reviewed for comformity with spec v1.5_101305. Name changed from Shortage Rate ($) to ASN Accuracy Rate ($). Also, metric refined to be 1 - shortage.
+
+ASN Accuracy Rate ($) is an Actual vs. ASN metric and incorporates threshold arithmetic.  The common way of expressing this in the spec is "Don't let overages offset shortages."
+
+The fact view evaluates each Scan Detail row and designates whether the row was a shortage, overagage, or equality. It also produces a column entitled "Actual_vs_ASN_Total_Cost_Abs" which is the absolute difference between (sku_cost_amt * act_qty) and (sku_cost_amt * asn_qty).
+
+This column, in conjunction with the dimension key indicating whether this is an overage, shortage, or equality, allows the Shortage Rate ($) ratio to be easily computed.  The following table shows the values to be used in the numerator and denominator, based on whether the fact row in question contains a shortage.
+
+CONDITION----------------------------*Numerator------------------------------------------*Denominator--------------
+ACT_QTY = ASN_QTY (No shortage)      * abs(act total cost act - ASN total cost) ==> 0    * ASN Total Cost
+* (by defition, always equals 0)                    * (sku_cost_amt * asn_qty)
+-------------------------------------*---------------------------------------------------*-------------------------
+ACT_QTY < ASN_QTY (Shortage)         * abs(act total cost act - ASN total cost)          * ASN Total Cost
+-------------------------------------*---------------------------------------------------*-------------------------
+ACT_QTY > ASN_QTY (Overage)          * Always 0 (zero).  This is the                     * ASN Total Cost
+* threshold behavior. Overages may                  *
+* not offest shortages.                             *
+-------------------------------------*---------------------------------------------------*-------------------------
+
+Reading the columns in the three rows in this table represents the slices of the cube which must be summed together in the numerator and denominator.  In the numerator, zeroes do not need to be coded; this reduces the numerator to the second row only.  The denominator is a single slice, regardless of Actual vs ASN key (that is, regardless of overage, shortage, or equality.)  Both numerator and denominator must be sliced for ASN Present, as an Actual vs. ASN metric makes no sense for non-ASN's.
+
+NOTES:
+(1) 9/15/2005. When this metric was written, a significant percentage of detail rows have non-zero ASN qty's but parent KeyRec's flagged as ASN Missing.  This issue has no present resolution.  11/3/05:  solved by change to ASN dimension.
+(2) 9/15/2005. RCAL034: Shortage Rate ($) Audit may be a proper subset of RCAL033: Shortage Rate ($).  However, RCAL034 has far fewer slicers than RCAL033.  A question to the business is pending about subset and filters.  Update:  RCAL034 is a subset of RCAL033 but has additional filters.
+
+1 - (
+
+NUMERATOR:  [Measures].[Actual vs ASN Actual Total Cost Amount] sliced by...
+...[Actual vs ASN].[Actual < ASN]
+...[ASN].[ASN Present].[ASN Present]
+...all Receiving Type members except [Receiving Type].[VO - VOID] or [Receiving Type].[IS - Installed Sales]
+or [Receiving Type].[EX - Expense] or [Receiving Type].[OR - Out for Repair]
+...all Fbill Filter members except [Fbill Filter].[CONSIGNMENT] or [Fbill Filter].[DROPSHIP]
+-----------------------------------------------------------------------
+DENOMINATOR: [Measures].[ASN Total Cost Amount] sliced by...
+...[ASN].[ASN Present].[ASN Present]
+...all Receiving Type members except [Receiving Type].[VO - VOID] or [Receiving Type].[IS - Installed Sales]
+or [Receiving Type].[EX - Expense] or [Receiving Type].[OR - Out for Repair]
+...all Fbill Filter members except [Fbill Filter].[CONSIGNMENT] or [Fbill Filter].[DROPSHIP]
+
+)
+
+Slice Exceptions (dimensions in which this metric will not slice):
+
+(1) Measures
+(2) Actual vs ASN
+(3) ASN
+(4) Receiving Type
+(5) Fbill Filter
+*/
+
+IIF(
+
+(
+
+[Actual vs ASN].currentmember.level is [Actual vs ASN].[(All)] AND
+[ASN].currentmember.level is [ASN].[(All)] AND
+[Receiving Type].currentmember.level is [Receiving Type].[(All)] AND
+[Fbill Filter].currentmember.level is [Fbill Filter].[(All)]
+
+),
+
+
+IIf( --Begin Iif
+IsEmpty( -- Begin IsEmpty for numerator
+
+sum( -- Begin numerator
+{ ([Measures].[Actual vs ASN Actual Total Cost Amount], [Actual vs ASN].[Actual < ASN], [ASN].[ASN Present].[ASN Present] )  } *
+
+{Except ( { [Receiving Type].[Receiving Type].Members } ,
+{ [Receiving Type].[VO - VOID], [Receiving Type].[IS - INSTALLED SALES], [Receiving Type].[EX - EXPENSE],
+[Receiving Type].[OR - OUT FOR REPAIR] } )  } *
+
+{Except ( { [Fbill Filter].[Fbill Filter].Members} ,
+{ [Fbill Filter].[Consignment], [Fbill Filter].[Dropship] } )  }
+
+) -- End numerator
+) -- End IsEmpty for numerator
+
+OR -- Checks either the numerator is null OR the denominator is null
+
+IsEmpty( -- Begin IsEmpty for numerator
+
+sum(
+{ ([Measures].[ASN Total Cost Amount], [ASN].[ASN Present].[ASN Present] ) } *
+
+{Except ( { [Receiving Type].[Receiving Type].Members } ,
+{ [Receiving Type].[VO - VOID], [Receiving Type].[IS - INSTALLED SALES], [Receiving Type].[EX - EXPENSE],
+[Receiving Type].[OR - OUT FOR REPAIR] } )  } *
+
+{Except ( { [Fbill Filter].[Fbill Filter].Members} ,
+{ [Fbill Filter].[Consignment], [Fbill Filter].[Dropship] } )  }
+) -- End numerator
+) -- End IsEmpty for numerator
+
+
+, -- End Iif condition
+
+NULL, -- If the numerator or denominator is NULL, return NULL
+
+-- Else, actual compute the metric
+
+1 - ( -- Begin expression
+
+sum( -- Begin sum, begin numerator
+{ ([Measures].[Actual vs ASN Actual Total Cost Amount], [Actual vs ASN].[Actual < ASN], [ASN].[ASN Present].[ASN Present] )  } *
+
+{Except ( { [Receiving Type].[Receiving Type].Members } ,
+{ [Receiving Type].[VO - VOID], [Receiving Type].[IS - INSTALLED SALES], [Receiving Type].[EX - EXPENSE],
+[Receiving Type].[OR - OUT FOR REPAIR] } )  } *
+
+{Except ( { [Fbill Filter].[Fbill Filter].Members} ,
+{ [Fbill Filter].[Consignment], [Fbill Filter].[Dropship] } )  }
+
+) -- End sum; end numerator
+
+/ -- ratio divisor
+
+
+sum( -- Begin denominator, begin sum
+{ ([Measures].[ASN Total Cost Amount], [ASN].[ASN Present].[ASN Present] ) } *
+
+{Except ( { [Receiving Type].[Receiving Type].Members } ,
+{ [Receiving Type].[VO - VOID], [Receiving Type].[IS - INSTALLED SALES], [Receiving Type].[EX - EXPENSE],
+[Receiving Type].[OR - OUT FOR REPAIR] } )  } *
+
+{Except ( { [Fbill Filter].[Fbill Filter].Members} ,
+{ [Fbill Filter].[Consignment], [Fbill Filter].[Dropship] } )  }
+) -- End sum; end denominator
+
+) --End expression
+
+) --End Iif
+,
+NULL
+) -- End of IIF
