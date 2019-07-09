@@ -1,3 +1,6 @@
+---------------------------------------------
+https://www.purplefrogsystems.com/blog/2008/04/semi-additive-measures-using-sql-server-standard/
+---------------------------------------------
 CREATE MEMBER CURRENTCUBE.[MEASURES].[Stock Level Avg]
       AS AVG(DESCENDANTS([Time].[Year Month Day].currentmember,
                    [Time].[Year Month Day].[Day]),
@@ -16,3 +19,5 @@ CREATE MEMBER CURRENTCUBE.[MEASURES].[Quota]
                    [Measures].[_Quota]),
      FORMAT_STRING = "#,#",
      VISIBLE = 1  ;
+---------------------------------------------------------------
+https://www.purplefrogsystems.com/blog/2008/04/semi-additive-measures-using-sql-server-standard/
