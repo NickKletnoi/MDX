@@ -1,0 +1,18 @@
+CREATE MEMBER CURRENTCUBE.[MEASURES].[Stock Level Avg]
+      AS AVG(DESCENDANTS([Time].[Year Month Day].currentmember,
+                   [Time].[Year Month Day].[Day]),
+                   [Measures].[_Stock Level]),
+     FORMAT_STRING = "#,#",
+     VISIBLE = 1  ;
+-----------------------------------------
+
+CREATE MEMBER CURRENTCUBE.[MEASURES].[Quota]
+      AS AVG(DESCENDANTS(
+[Time].[Year Month Day].currentmember,
+([Time].[Year Month Day].[Month],
+[Territory].[TerritoryID])
+
+),
+                   [Measures].[_Quota]),
+     FORMAT_STRING = "#,#",
+     VISIBLE = 1  ;
